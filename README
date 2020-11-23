@@ -26,24 +26,24 @@ There is only one Message type that is recognized by both the server and the cli
 STATUS CODES
 ------------
 
-CODE    MESSAGE                     TRANSLATED                          USED BY
-===============================================================================
-100     JUST DONT YELL              OK                                  BOTH
+CODE    MESSAGE                     TRANSLATED                          USED BY    AUTH
+=======================================================================================
+100     JUST DONT YELL              OK                                  BOTH       NO
 
-200     I BROKE MY ANKLE            Internal Server Error               SERVER
-210     I DONT SPEAK FRENCH         Bad Request                         SERVER
-230     GHOSTS NOT ALLOWED          Not Authenticated                   SERVER
-240     MISTER ANDERSON             Already Authenticated               SERVER
-250     FOR YOUR INFORMATION        Server Providing Information        SERVER
-260     SMASH THAT KEYBOARD         Start Typing; Server is Counting    SERVER
+200     I BROKE MY ANKLE            Internal Server Error               SERVER     NO
+210     I DONT SPEAK FRENCH         Bad Request                         SERVER     NO
+230     GHOSTS NOT ALLOWED          Not Authenticated                   SERVER     NO
+240     MISTER ANDERSON             Already Authenticated               SERVER     NO
+250     FOR YOUR INFORMATION        Server Providing Information        SERVER     NO
+260     SMASH THAT KEYBOARD         Start Typing; Server is Counting    SERVER     NO
 
-300     LET ME IN                   Login                               CLIENT
-310     SIGN ME UP                  Register                            CLIENT
-320     NERD LIST                   List Scoreboard                     CLIENT
-330     I DAB ON ALL YOU NERDS      Create a Team                       CLIENT
-340     LET ME HELP                 Join a Team                         CLIENT
-350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT
-===============================================================================
+300     LET ME IN                   Login                               CLIENT     NO
+310     SIGN ME UP                  Register                            CLIENT     NO
+320     NERD LIST                   List Scoreboard                     CLIENT     YES
+330     I DAB ON ALL YOU NERDS      Create a Team                       CLIENT     YES
+340     LET ME HELP                 Join a Team                         CLIENT     YES
+350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT     YES
+=======================================================================================
 
 EXAMPLE MESSAGE
 ---------------
