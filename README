@@ -1,0 +1,87 @@
+TYPING RELAY RACE
+=================
+
+This is the official repository of the Typing Relay Race game from Group 1, of Distributed Systems Project 1, WS20/21.
+
+G1-TRR PROTOCOL
+===============
+
+This short documentation specifies a protocol for the Typing Relay Race Client-Server communication.
+
+MESSAGE TRANSFER
+----------------
+
+(1) Messages play important part in distributed communication systems. The G1-TRR standard follows a TLV protocol, which means that every message written to the socket is in the form of the Type Length Value.
+
+There is only one Message type that is recognized by both the server and the client. The Message type has the following properties (1) isResponse (boolean), (2) reply (int), (3) payload (Object), (4) isError, where:
+
+(1) isResponse [REQUIRED] - can be true or false, this gives both the client and the server the freedom to receive and send messages without without waiting for a response when is not needed.
+
+(2) reply[REQUIRED] - a unique status code (check the STATUS CODES section below)
+
+(3) payload [REQUIRED] - [TODO]
+
+(4) isError [OPTIONAL] - [TODO]
+
+STATUS CODES
+------------
+
+CODE    MESSAGE                     TRANSLATED                          USED BY
+================================================================================
+100     JUST DONT YELL              OK                                  BOTH
+
+200     I BROKE MY ANKLE            Internal Server Error               SERVER
+210     I DONT SPEAK FRENCH         Bad Request                         SERVER
+230     GHOSTS NOT ALLOWED          Not Authenticated                   SERVER
+240     MISTER ANDERSON             Already Authenticated               SERVER
+250     FOR YOUR INFORMATION        Server Providing Information        SERVER
+260     SMASH THAT KEYBOARD         Start Typing; Server is Counting    SERVER
+
+300     LET ME IN                   Login                               CLIENT
+310     SIGN ME UP                  Register                            CLIENT
+320     NERD LIST                   Show Scoreboard                     CLIENT
+330     I DAB ON ALL YOU NERDS      Create a Team                       CLIENT
+340     LET ME HELP                 Join a Team                         CLIENT
+================================================================================
+
+EXAMPLE MESSAGE
+---------------
+
+    {
+        isResponse: false,
+        reply: 300,
+        payload: {
+            username: "tin",
+            password: "QWERTY1234", # SHOULD BE PRE-HASHED!
+        }
+        isError: false,
+    }
+
+    ...
+
+    {
+        isResponse: true,
+        reply: 100,
+        payload: null,
+        isError: false,
+    }
+
+    ...
+
+    {
+        isResponse: false,
+        reply: 320,
+        payload: null,
+        isError: false,
+    }
+
+    ...
+
+    {
+        isResponse: true,
+        reply: 100,
+        payload: {
+            scoreboard: { ... }
+        },
+        isError: false,
+    }
