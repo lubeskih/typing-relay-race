@@ -27,7 +27,7 @@ STATUS CODES
 ------------
 
 CODE    MESSAGE                     TRANSLATED                          USED BY
-================================================================================
+===============================================================================
 100     JUST DONT YELL              OK                                  BOTH
 
 200     I BROKE MY ANKLE            Internal Server Error               SERVER
@@ -39,10 +39,11 @@ CODE    MESSAGE                     TRANSLATED                          USED BY
 
 300     LET ME IN                   Login                               CLIENT
 310     SIGN ME UP                  Register                            CLIENT
-320     NERD LIST                   Show Scoreboard                     CLIENT
+320     NERD LIST                   List Scoreboard                     CLIENT
 330     I DAB ON ALL YOU NERDS      Create a Team                       CLIENT
 340     LET ME HELP                 Join a Team                         CLIENT
-================================================================================
+350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT
+===============================================================================
 
 EXAMPLE MESSAGE
 ---------------
