@@ -1,7 +1,7 @@
 TYPING RELAY RACE
 =================
 
-This is the official repository of the Typing Relay Race game from Group 1, of Distributed Systems Project 1, WS20/21.
+This is the official repository of the Typing Relay Race game from Group 1, of Distributed Systems Project 1, WS20/21. :)
 
 G1-TRR PROTOCOL
 ===============
@@ -17,7 +17,7 @@ There is only one Message type that is recognized by both the server and the cli
 
 (1) isResponse [REQUIRED] - can be true or false, this gives both the client and the server the freedom to receive and send messages without without waiting for a response when is not needed.
 
-(2) reply[REQUIRED] - a unique status code (check the STATUS CODES section below)
+(2) reply [REQUIRED] - a unique status code (check the STATUS CODES section below)
 
 (3) payload [REQUIRED] - [TODO]
 
