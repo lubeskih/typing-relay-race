@@ -1,6 +1,6 @@
 package com.company.server;
 
-import com.company.Shared.Message;
+import com.company.shared.Message;
 
 import java.io.*;
 import java.net.ServerSocket;

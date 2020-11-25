@@ -1,4 +1,4 @@
-package com.company.Shared;
+package com.company.shared;
 
 public class Message implements java.io.Serializable {
     public boolean isResponse;

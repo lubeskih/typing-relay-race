@@ -19,7 +19,7 @@ package com.company.client;
 // 350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT     YES
 // =======================================================================================
 
-import com.company.Shared.Message;
+import com.company.shared.Message;
 
 import java.util.concurrent.BlockingQueue;
 
