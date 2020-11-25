@@ -1,11 +1,12 @@
 package com.company.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import com.company.Shared.Message;
+
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Client {
     private static final int PORT = 1111;
@@ -14,31 +15,38 @@ public class Client {
     public static void main(String[] args) {
 
         try(
-            Socket kkSocket = new Socket(HOST, PORT);
-            PrintWriter out = new PrintWriter(kkSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(kkSocket.getInputStream()));
-            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+            Socket socket = new Socket(HOST, PORT);
+            // BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
         ) {
-            String fromServer, fromUser;
+            BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
+            ClientG1TRR protocol = new ClientG1TRR(bq);
 
-            while ((fromServer = in.readLine()) != null) {
-                System.out.println(fromServer);
+            Message m = (Message) in.readObject();
 
-                if (fromServer.equals("Bye."))
-                    break;
+            protocol.process(m);
 
-                System.out.print(">> ");
-                fromUser = stdIn.readLine();
+            System.out.println("Code in BQ: " + bq.peek().reply);
 
-                if (fromUser != null) {
-                    out.println(fromUser);
-                }
+            try {
+                System.out.println("Sending last object through the wire ...");
+                out.writeObject(bq.poll());
+                System.out.println("Sent!");
+                System.out.println("Size of bq: " + bq.size());
+            } catch (IOException exception) {
+                exception.printStackTrace();
             }
 
+            System.out.println("Bye bye! :)");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException exception) {
             exception.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

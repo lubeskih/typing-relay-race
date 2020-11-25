@@ -1,9 +1,8 @@
 package com.company.server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import com.company.Shared.Message;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.Executors;
@@ -15,9 +14,15 @@ public class Server {
 
         try (var listener = new ServerSocket(PORT)) {
             System.out.println("Server is running ...");
-            var pool = Executors.newFixedThreadPool(20);
-            while (true) {
-                pool.execute(new Worker(listener.accept()));
+            var pool = Executors.newFixedThreadPool(20); // should not be fixed
+            while (true) { // after this ends, make sure to signal them to exit
+                Socket client = listener.accept();
+
+                // Create a blocking queue
+                Thread t = new Thread(new Worker(client));
+                t.start();
+
+                // read semaphores, read-write log, mutex, syncronized
             }
         }
     }
@@ -32,23 +37,18 @@ public class Server {
         @Override
         public void run() {
             try(
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            ) {
-                String inputLine;
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            )
+            {
+                Message m = new Message(false, 100, false,"Hello mate! :)");
+                out.writeObject(m);
+                System.out.println("Message sent! Closing.");
 
-                out.println("Connected.");
+                Message received = (Message) in.readObject();
+                System.out.println("Received " + received.payload);
 
-                while((inputLine = in.readLine()) != null) {
-                    if (inputLine.equals("ping")) {
-                        out.println("pong.");
-                    }
-
-                    if (inputLine.equals("Bye")) {
-                        break;
-                    }
-                }
-            } catch (IOException exception) {
+            } catch (IOException | ClassNotFoundException exception) {
                 exception.printStackTrace();
             }
         }
