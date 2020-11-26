@@ -21,7 +21,7 @@ public class Client {
             ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
         ) {
             BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
-            ClientG1TRR protocol = new ClientG1TRR(bq);
+            ClientProtocolHandler protocol = new ClientProtocolHandler(bq);
 
             Message m = (Message) in.readObject();
 

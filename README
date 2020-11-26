@@ -86,3 +86,19 @@ EXAMPLE MESSAGE
         },
         isError: false,
     }
+
+USER COMMANDS (Client)
+----------------------
+
+COMMAND                                             ACTION
+===========================================================================
+:help Show Help                                     Show help
+:login <username> <password>                        Login
+:register <username> <password> <repeat_password>   Register an account
+:scoreboard                                         View Scoreboard
+:create <team_name>                                 Create a New Team
+:join <team_name>                                   Join an Existing Team
+:teams                                              List All Teams
+:ping                                               Connection Healthcheck
+:clear                                              Clears the Screen
+===========================================================================
