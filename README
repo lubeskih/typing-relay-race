@@ -43,6 +43,7 @@ CODE    MESSAGE                     TRANSLATED                          USED BY 
 330     I DAB ON ALL YOU NERDS      Create a Team                       CLIENT     YES
 340     LET ME HELP                 Join a Team                         CLIENT     YES
 350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT     YES
+360     YOU ALIVE?                  Healthcheck                         CLIENT     NO
 =======================================================================================
 
 EXAMPLE MESSAGE

@@ -1,5 +1,6 @@
 package com.company.client;
 
+import com.company.server.Server;
 import com.company.shared.Message;
 
 import java.io.*;
@@ -16,37 +17,99 @@ public class Client {
 
         try(
             Socket socket = new Socket(HOST, PORT);
-            // BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         ) {
             BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
             ClientProtocolHandler protocol = new ClientProtocolHandler(bq);
 
-            Message m = (Message) in.readObject();
+            Thread read = new Thread(new Read(socket, protocol));
+            read.start();
 
-            protocol.process(m);
+            Thread write = new Thread(new Write(socket, bq));
+            write.start();
 
-            System.out.println("Code in BQ: " + bq.peek().reply);
+            while(true) {
+                System.out.print(">> ");
+                String input = stdIn.readLine();
 
-            try {
-                System.out.println("Sending last object through the wire ...");
-                out.writeObject(bq.poll());
-                System.out.println("Sent!");
-                System.out.println("Size of bq: " + bq.size());
-            } catch (IOException exception) {
-                exception.printStackTrace();
+                if (input.startsWith(":")) {
+                    if (protocol.validCommand(input)) {
+                        protocol.processUserInput(input);
+                    } else {
+                        System.out.println("Invalid command! Type :help to list supported commands.");
+                    }
+                } else {
+                    // think about it
+                }
             }
 
-            System.out.println("Bye bye! :)");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException exception) {
             exception.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+}
+
+class Read implements Runnable {
+    private Socket socket;
+    private ClientProtocolHandler protocol;
+
+    Read(Socket socket, ClientProtocolHandler protocol) {
+        this.socket = socket;
+        this.protocol = protocol;
+    }
+
+    @Override
+    public void run() {
+        try(
+            ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            ) {
+            while(true) {
+                Message m = (Message) in.readObject();
+                System.out.println("Received a " + m.reply + " request.");
+                protocol.process(m);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+}
+
+class Write implements Runnable {
+    private Socket socket;
+    private BlockingQueue<Message> bq;
+
+    Write(Socket socket, BlockingQueue<Message> bq) {
+        this.socket = socket;
+        this.bq = bq;
+    }
+
+    @Override
+    public void run() {
+        try(
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+        ) {
+            while(true) {
+                if(!bq.isEmpty()) {
+                    Message m = bq.poll();
+                    out.writeObject(m);
+
+                    System.out.println("Sent a " + m.reply + " request!");
+                } else {
+                    Thread.sleep(500);
+                }
+            }
+
+        } catch (IOException | InterruptedException exception) {
+            exception.printStackTrace();
         }
     }
 }

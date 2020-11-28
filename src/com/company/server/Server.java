@@ -41,13 +41,17 @@ public class Server {
                 ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             )
             {
-                Message m = new Message(false, 100, false,"Hello mate! :)");
-                out.writeObject(m);
-                System.out.println("Message sent! Closing.");
 
-                Message received = (Message) in.readObject();
-                System.out.println("Received " + received.payload);
+                for(;;) {
+                    System.out.println("Waiting for an inputObject ...");
+                    Message received = (Message) in.readObject();
+                    System.out.println("Received a " + received.reply + " requests with a payload of " + received.payload);
 
+                    System.out.println("Preparing message ...");
+                    Message r = new Message(false, 100, false,"Hello mate! :)");
+                    out.writeObject(r);
+                    System.out.println("Message sent! Closing.");
+                }
             } catch (IOException | ClassNotFoundException exception) {
                 exception.printStackTrace();
             }

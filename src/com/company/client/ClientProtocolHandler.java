@@ -2,15 +2,34 @@ package com.company.client;
 
 import com.company.shared.Message;
 import com.company.shared.ProtocolDictionary;
+import com.company.shared.payloads.LoginPayload;
+import com.company.shared.payloads.RegisterPayload;
 
+import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 
 public class ClientProtocolHandler extends ProtocolDictionary {
     public BlockingQueue<Message> bq;
+    public HashMap<String, Boolean> commands = new HashMap<>();
 
     public ClientProtocolHandler(BlockingQueue<Message> bq) {
         super();
         this.bq = bq;
+
+        this.initCommands();
+    }
+
+    public void initCommands() {
+        this.commands.put(":login", true);
+        this.commands.put(":register", true);
+        this.commands.put(":clear", true);
+        this.commands.put(":scoreboard", true);
+        this.commands.put(":teams", true);
+        this.commands.put(":join", true);
+        this.commands.put(":create", true);
+        this.commands.put(":exit", true);
+        this.commands.put(":ping", true);
+        this.commands.put(":help", true);
     }
 
     public void process (Message m) throws Exception {
@@ -69,15 +88,87 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         if (!(m.payload instanceof String)) {
             throw new Exception("Fucked up.");
         }
+    }
 
-        System.out.println("Received " + m.reply + " from server, which translates to " + this.translateReplyCode(m.reply));
-        System.out.println("Server says: " + m.payload);
+    public void processUserInput(String input) throws Exception {
+        String[] split = input.split(" ");
 
-        String replyMessage = "Good.";
+        switch (split[0]) {
+            case ":register": processRegisterInput(split); break;
+            case ":login": processLoginInput(split); break;
+            case ":scoreboard": processScoreboardInput(); break;
+            case ":help": help(); break;
+            case ":ping": healthcheck(); break;
+            default: System.out.println("Command is valid but not yet implemented!"); break;
+        }
+    }
 
-        Message output = new Message(true, 100, false, replyMessage);
+    private void healthcheck() {
+        String ping = "ping";
 
-        this.bq.add(output);
-        System.out.println("Response added in BQ!");
+        Message m = new Message(false, 360, false, ping);
+        this.bq.add(m);
+    }
+
+    private void processScoreboardInput() {
+        String payload = this.translateReplyCode(320); // Not really needed
+        Message m = new Message(false, 320, false, payload);
+        this.bq.add(m);
+    }
+
+    private void processLoginInput(String[] credentials) {
+        if (credentials.length != 3) {
+            System.out.println("Invalid login input! Use: :login <user> <pass>");
+            return;
+        }
+
+        String username = credentials[1];
+        String password = credentials[2];
+
+        LoginPayload lp = new LoginPayload(username, password);
+
+        Message m = new Message(false, 300, false, lp);
+        this.bq.add(m);
+    }
+
+    private void processRegisterInput(String[] credentials) {
+        if (credentials.length != 4) {
+            System.out.println("Invalid register input! Use: :register <user> <pass> <pass>");
+            return;
+        }
+
+        String username = credentials[1];
+        String password = credentials[2];
+        String repeatedPassword = credentials[3];
+
+        RegisterPayload rp = new RegisterPayload(username, password, repeatedPassword);
+
+        Message m = new Message(false, 310, false, rp);
+        this.bq.add(m);
+    }
+
+    public boolean validCommand(String command) {
+        String[] split = command.split(" ");
+
+        if (this.commands.containsKey(split[0])) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void help() {
+        System.out.println("COMMAND                                             ACTION\n" +
+                "===========================================================================\n" +
+                ":help                                               Show help\n" +
+                ":login <username> <password>                        Login\n" +
+                ":register <username> <password> <repeat_password>   Register an account\n" +
+                ":scoreboard                                         View Scoreboard\n" +
+                ":create <team_name>                                 Create a New Team\n" +
+                ":join <team_name>                                   Join an Existing Team\n" +
+                ":teams                                              List All Teams\n" +
+                ":ping                                               Connection Healthcheck\n" +
+                ":clear                                              Clears the Screen\n" +
+                "===========================================================================\n");
     }
 }

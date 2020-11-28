@@ -13,7 +13,6 @@ public class ClientGUI {
     JTextField textField = new JTextField(50);
     JTextArea messageArea = new JTextArea(40, 50);
 
-
     public ClientGUI() {
         textField.setEditable(false);
         messageArea.setEditable(false);
