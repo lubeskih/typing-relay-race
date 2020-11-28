@@ -1,6 +1,5 @@
 package com.company.client;
 
-import com.company.server.Server;
 import com.company.shared.Message;
 
 import java.io.*;
@@ -19,7 +18,7 @@ public class Client {
             Socket socket = new Socket(HOST, PORT);
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         ) {
-            BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
+            final BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
             ClientProtocolHandler protocol = new ClientProtocolHandler(bq);
 
             Thread read = new Thread(new Read(socket, protocol));
@@ -69,7 +68,7 @@ class Read implements Runnable {
             ) {
             while(true) {
                 Message m = (Message) in.readObject();
-                System.out.println("Received a " + m.reply + " request.");
+                System.out.println("Received a " + m.reply + " request, saying: " + m.payload.toString());
                 protocol.process(m);
             }
         } catch (ClassNotFoundException e) {
@@ -97,16 +96,14 @@ class Write implements Runnable {
         try(
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
         ) {
-            while(true) {
-                if(!bq.isEmpty()) {
-                    Message m = bq.poll();
-                    out.writeObject(m);
 
-                    System.out.println("Sent a " + m.reply + " request!");
-                } else {
-                    Thread.sleep(500);
-                }
-            }
+            do {
+                Message m = bq.take();
+                out.writeObject(m);
+
+                System.out.println("Sent a " + m.reply + " request with a payload of " + m.payload);
+
+            } while(true); // while true.. ? think about this.
 
         } catch (IOException | InterruptedException exception) {
             exception.printStackTrace();
