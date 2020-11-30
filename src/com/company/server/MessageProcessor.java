@@ -5,11 +5,13 @@ import com.company.shared.Message;
 import java.util.concurrent.BlockingQueue;
 
 public class MessageProcessor implements Runnable {
-    private BlockingQueue<InternalMessage> OutboundMessageBQ;
-    private BlockingQueue<InternalMessage> InternalMessageBQ;
-    private ServerProtocolHandler protocol;
+    private final BlockingQueue<InternalMessage> OutboundMessageBQ;
+    private final BlockingQueue<InternalMessage> InternalMessageBQ;
+    private final ServerProtocolHandler protocol;
 
-    public MessageProcessor(BlockingQueue<InternalMessage> InternalMessageBQ, ServerProtocolHandler protocol, BlockingQueue<InternalMessage> OutboundMessageBQ) {
+    public MessageProcessor(BlockingQueue<InternalMessage> InternalMessageBQ,
+                            ServerProtocolHandler protocol,
+                            BlockingQueue<InternalMessage> OutboundMessageBQ) {
         this.OutboundMessageBQ = OutboundMessageBQ;
         this.protocol = protocol;
         this.InternalMessageBQ = InternalMessageBQ;
@@ -22,7 +24,6 @@ public class MessageProcessor implements Runnable {
                 InternalMessage m = this.InternalMessageBQ.take();
                 Thread ProcessMessageThread = new Thread(new ProcessMessage(m, this.OutboundMessageBQ));
                 ProcessMessageThread.start();
-
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -30,17 +31,17 @@ public class MessageProcessor implements Runnable {
     }
 
     private class ProcessMessage implements Runnable {
-        private InternalMessage m;
-        private BlockingQueue<InternalMessage> OutboundMessageBQ;
+        private final InternalMessage m;
+        private final BlockingQueue<InternalMessage> OutboundMessageBQ;
 
-        public ProcessMessage(InternalMessage m, BlockingQueue<InternalMessage> OutboundMessageBQ) {
+        public ProcessMessage(InternalMessage m,
+                              BlockingQueue<InternalMessage> OutboundMessageBQ) {
             this.m = m;
             this.OutboundMessageBQ = OutboundMessageBQ;
         }
 
         @Override
         public void run() {
-            ServerProtocolHandler protocol = new ServerProtocolHandler();
             InternalMessage im = protocol.process(this.m);
             this.OutboundMessageBQ.add(im);
         }

@@ -19,12 +19,13 @@ public class Client {
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         ) {
             final BlockingQueue<Message> bq = new LinkedBlockingDeque<>();
-            ClientProtocolHandler protocol = new ClientProtocolHandler(bq);
+            Store store = new Store();
+            ClientProtocolHandler protocol = new ClientProtocolHandler(bq, store);
 
-            Thread read = new Thread(new Read(socket, protocol));
+            Thread read = new Thread(new Read(socket, protocol, store));
             read.start();
 
-            Thread write = new Thread(new Write(socket, bq));
+            Thread write = new Thread(new Write(socket, bq, store));
             write.start();
 
             while(true) {
@@ -55,10 +56,12 @@ public class Client {
 class Read implements Runnable {
     private Socket socket;
     private ClientProtocolHandler protocol;
+    private Store store;
 
-    Read(Socket socket, ClientProtocolHandler protocol) {
+    Read(Socket socket, ClientProtocolHandler protocol, Store store) {
         this.socket = socket;
         this.protocol = protocol;
+        this.store = store;
     }
 
     @Override
@@ -85,10 +88,12 @@ class Read implements Runnable {
 class Write implements Runnable {
     private Socket socket;
     private BlockingQueue<Message> bq;
+    private Store store;
 
-    Write(Socket socket, BlockingQueue<Message> bq) {
+    Write(Socket socket, BlockingQueue<Message> bq, Store store) {
         this.socket = socket;
         this.bq = bq;
+        this.store = store;
     }
 
     @Override
@@ -99,6 +104,12 @@ class Write implements Runnable {
 
             do {
                 Message m = bq.take();
+                String sessionToken = this.store.getSessionToken();
+
+                if (sessionToken != null) {
+                    m.setSessionToken(sessionToken);
+                }
+
                 out.writeObject(m);
 
                 System.out.println("Sent a " + m.reply + " request with a payload of " + m.payload);

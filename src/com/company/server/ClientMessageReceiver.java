@@ -24,6 +24,7 @@ public class ClientMessageReceiver implements Runnable {
         {
             while(true) {
                 Message received = (Message) in.readObject();
+                System.out.println("User sent a token which is: " + received.getSessionToken());
 
                 InternalMessage im = new InternalMessage(received, out);
                 this.InternalMessageBQ.add(im);

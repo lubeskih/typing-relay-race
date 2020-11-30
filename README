@@ -11,6 +11,8 @@ This short documentation specifies a protocol for the Typing Relay Race Client-S
 MESSAGE TRANSFER
 ----------------
 
+[S] <- [C]
+
 (1) Messages play important part in distributed communication systems. The G1-TRR standard follows a TLV protocol, which means that every message written to the socket is in the form of the Type Length Value.
 
 There is only one Message type that is recognized by both the server and the client. The Message type has the following properties (1) isResponse (boolean), (2) reply (int), (3) payload (Object), (4) isError, where:
@@ -63,8 +65,10 @@ EXAMPLE MESSAGE
 
     {
         isResponse: true,
-        reply: 100,
-        payload: null,
+        reply: 300,
+        payload: {
+            sessionToken: "asdasdasd"
+        },
         isError: false,
     }
 

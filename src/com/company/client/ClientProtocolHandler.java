@@ -11,10 +11,12 @@ import java.util.concurrent.BlockingQueue;
 public class ClientProtocolHandler extends ProtocolDictionary {
     public BlockingQueue<Message> bq;
     public HashMap<String, Boolean> commands = new HashMap<>();
+    public Store store;
 
-    public ClientProtocolHandler(BlockingQueue<Message> bq) {
+    public ClientProtocolHandler(BlockingQueue<Message> bq, Store store) {
         super();
         this.bq = bq;
+        this.store = store;
 
         this.initCommands();
     }
@@ -42,7 +44,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case 230: P230(); break;
             case 240: P240(); break;
             case 250: P250(); break;
-            case 300: P300(); break;
+            case 300: P300(m); break;
             case 310: P310(); break;
             case 320: P320(); break;
             case 330: P330(); break;
@@ -66,7 +68,8 @@ public class ClientProtocolHandler extends ProtocolDictionary {
     private void P310() {
     }
 
-    private void P300() {
+    private void P300(Message m) {
+        store.setSessionToken((String) m.payload);
     }
 
     private void P250() {
@@ -90,7 +93,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         }
     }
 
-    public void processUserInput(String input) throws Exception {
+    public void processUserInput(String input) {
         String[] split = input.split(" ");
 
         switch (split[0]) {
@@ -141,9 +144,9 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         String password = credentials[2];
         String repeatedPassword = credentials[3];
 
-        RegisterPayload rp = new RegisterPayload(username, password, repeatedPassword);
+        RegisterPayload registerPayload = new RegisterPayload(username, password, repeatedPassword);
 
-        Message m = new Message(false, 310, false, rp);
+        Message m = new Message(false, 310, false, registerPayload);
         this.bq.add(m);
     }
 

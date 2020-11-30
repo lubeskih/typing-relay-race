@@ -41,7 +41,6 @@ public class Postoffice implements Runnable {
             try {
                 out.writeObject(m);
                 System.out.println("Sent a " + m.reply + " request with payload of " + m.payload);
-                out.flush();
             } catch (IOException exception) {
                 exception.printStackTrace();
             }

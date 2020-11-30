@@ -1,7 +1,5 @@
 package com.company.server;
 
-import com.company.shared.Message;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
@@ -11,10 +9,11 @@ public class Server {
     private static final int PORT = 1111;
 
     public static void main(String[] args) throws Exception {
-        final BlockingQueue<InternalMessage> InternalMessageBQ = new LinkedBlockingDeque<>();
-        final BlockingQueue<InternalMessage> OutboundMessagesBQ = new LinkedBlockingDeque<>();
+        BlockingQueue<InternalMessage> InternalMessageBQ = new LinkedBlockingDeque<>();
+        BlockingQueue<InternalMessage> OutboundMessagesBQ = new LinkedBlockingDeque<>();
+        Store store = new Store();
 
-        ServerProtocolHandler protocol = new ServerProtocolHandler();
+        ServerProtocolHandler protocol = new ServerProtocolHandler(store);
 
         Thread mp = new Thread(new MessageProcessor(InternalMessageBQ, protocol, OutboundMessagesBQ));
         mp.start();
