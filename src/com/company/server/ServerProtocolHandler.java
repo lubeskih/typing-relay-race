@@ -32,8 +32,31 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             case 300: return P300(im);
             case 310: return P310(im);
             case 320: return P320(im);
+            case 370: return P370(im);
             default: return PDEFAULT(im);
         }
+    }
+
+    private InternalMessage P370(InternalMessage im) {
+        Message replyMessage;
+        InternalMessage reply;
+        String payload;
+
+        try {
+            this.authenticate(im.message.getSessionToken());
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        store.loggedInUsers.remove(im.message.getSessionToken());
+
+        payload = "Logged out successfully.";
+        replyMessage = new Message(true, 100, false, payload);
+        reply = new InternalMessage(replyMessage, im.address);
+        return reply;
     }
 
     private synchronized InternalMessage P300(InternalMessage im) {
@@ -127,12 +150,32 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
-    private synchronized InternalMessage P320(InternalMessage message) {
-        String payload = "Everyone won!";
+    private synchronized InternalMessage P320(InternalMessage im) {
+        Message replyMessage;
+        InternalMessage reply;
+        String payload;
 
-        Message replyMessage = new Message(true, 320, false, payload);
-        InternalMessage reply = new InternalMessage(replyMessage, message.address);
+        try {
+            this.authenticate(im.message.getSessionToken());
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        payload = "Everyone won!";
+
+        replyMessage = new Message(true, 320, false, payload);
+        reply = new InternalMessage(replyMessage, im.address);
 
         return reply;
+    }
+
+    // Utilities and Helpers
+    private void authenticate(String sessionToken) throws Exception {
+        if (sessionToken == null || !(store.loggedInUsers.containsKey(sessionToken))) {
+            throw new Exception("Not authenticated. Log in first.");
+        }
     }
 }

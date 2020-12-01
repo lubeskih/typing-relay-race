@@ -32,6 +32,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         this.commands.put(":exit", true);
         this.commands.put(":ping", true);
         this.commands.put(":help", true);
+        this.commands.put(":logout", true);
     }
 
     public void process (Message m) throws Exception {
@@ -102,8 +103,15 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case ":scoreboard": processScoreboardInput(); break;
             case ":help": help(); break;
             case ":ping": healthcheck(); break;
+            case ":logout": logout(); break;
             default: System.out.println("Command is valid but not yet implemented!"); break;
         }
+    }
+
+    private void logout() {
+        String payload = this.translateReplyCode(370);
+        Message m = new Message(false, 370, false, payload);
+        this.bq.add(m);
     }
 
     private void healthcheck() {

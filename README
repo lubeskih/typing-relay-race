@@ -46,6 +46,7 @@ CODE    MESSAGE                     TRANSLATED                          USED BY 
 340     LET ME HELP                 Join a Team                         CLIENT     YES
 350     SHOW YASELF                 List Online Teams (only 1/2 joined) CLIENT     YES
 360     YOU ALIVE?                  Healthcheck                         CLIENT     NO
+370     IM OUT                      Log out                             CLIENT     YES
 =======================================================================================
 
 EXAMPLE MESSAGE

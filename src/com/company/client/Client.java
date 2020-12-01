@@ -106,6 +106,9 @@ class Write implements Runnable {
                 Message m = bq.take();
                 String sessionToken = this.store.getSessionToken();
 
+                // if we have a session token in the Store
+                // then every outbound message will have
+                // the session token as part of the message
                 if (sessionToken != null) {
                     m.setSessionToken(sessionToken);
                 }
@@ -114,6 +117,11 @@ class Write implements Runnable {
 
                 System.out.println("Sent a " + m.reply + " request with a payload of " + m.payload);
 
+                // if we have a session token, but the outbound message
+                // was "logout", then remove the session token
+                if (m.reply == 370 && sessionToken != null) {
+                    this.store.setSessionToken(null);
+                }
             } while(true); // while true.. ? think about this.
 
         } catch (IOException | InterruptedException exception) {

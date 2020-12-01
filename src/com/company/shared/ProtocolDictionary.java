@@ -16,6 +16,7 @@ public abstract class ProtocolDictionary {
     private final String RC330 = "I DAB ON ALL YOU NERDS";
     private final String RC340 = "LET ME HELP";
     private final String RC350 = "SHOW YASELF";
+    private final String RC370 = "IM OUT";
 
     public String translateReplyCode(int replyCode) {
         switch(replyCode) {
@@ -31,6 +32,7 @@ public abstract class ProtocolDictionary {
             case 330: return this.RC330;
             case 340: return this.RC340;
             case 350: return this.RC350;
+            case 370: return this.RC370;
             default: return "Couldn't match message!";
         }
     }
