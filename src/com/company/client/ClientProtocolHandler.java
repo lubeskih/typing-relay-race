@@ -104,6 +104,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case ":help": help(); break;
             case ":ping": healthcheck(); break;
             case ":logout": logout(); break;
+            case ":create": processCreateTeamInput(split); break;
             default: System.out.println("Command is valid but not yet implemented!"); break;
         }
     }
@@ -155,6 +156,18 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         RegisterPayload registerPayload = new RegisterPayload(username, password, repeatedPassword);
 
         Message m = new Message(false, 310, false, registerPayload);
+        this.bq.add(m);
+    }
+
+    private void processCreateTeamInput(String[] input) {
+        if (input.length != 2) {
+            System.out.println("Invalid input! Use: :create <teamname>");
+            return;
+        }
+
+        String teamname = input[1];
+
+        Message m = new Message(false, 330, false, teamname);
         this.bq.add(m);
     }
 

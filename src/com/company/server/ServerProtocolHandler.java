@@ -12,6 +12,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
     private Store store;
 
     private static final SecureRandom secureRandom = new SecureRandom();
+//    private static final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder();
 
     public static String generateNewToken() {
@@ -32,9 +33,43 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             case 300: return P300(im);
             case 310: return P310(im);
             case 320: return P320(im);
+            case 330: return P330(im);
             case 370: return P370(im);
             default: return PDEFAULT(im);
         }
+    }
+
+    private synchronized InternalMessage P330(InternalMessage im) {
+        Message replyMessage;
+        InternalMessage reply;
+        String payload;
+
+        try {
+            this.authenticate(im.message.getSessionToken());
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        String teamname = (String) im.message.payload;
+        LoggedInUser memberOne = this.store.loggedInUsers.get(im.message.getSessionToken());
+        try {
+            this.store.createTeam(teamname, memberOne);
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        System.out.println(this.store.teams.toString());
+
+        payload = "Team created!";
+        replyMessage = new Message(true, 100, false, payload);
+        reply = new InternalMessage(replyMessage, im.address);
+        return reply;
     }
 
     private InternalMessage P370(InternalMessage im) {
@@ -82,9 +117,10 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         }
 
         // check if already logged in
+        // TODO should also check if its logged in from different client (double login)
         boolean sessionTokenExists = im.message.getSessionToken() != null;
         if (sessionTokenExists) {
-            if (store.loggedInUsers.containsKey(im.message.getSessionToken())) {
+            if (store.loggedInUsers.containsKey(im.message.getSessionToken()) ) {
                 String payload = "You are already logged in.";
                 replyMessage = new Message(true, 210, true, payload);
                 reply = new InternalMessage(replyMessage, im.address);
@@ -150,6 +186,10 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // AOP
+    // Aspect Oriented Programming
+    // aspect-j
+    // look it up
     private synchronized InternalMessage P320(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;

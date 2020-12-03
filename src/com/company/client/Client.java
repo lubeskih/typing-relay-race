@@ -71,7 +71,7 @@ class Read implements Runnable {
             ) {
             while(true) {
                 Message m = (Message) in.readObject();
-                System.out.println("Received a " + m.reply + " request, saying: " + m.payload.toString());
+                System.out.println("Received a " + m.reply + " response, saying: " + m.payload.toString());
                 protocol.process(m);
             }
         } catch (ClassNotFoundException e) {
