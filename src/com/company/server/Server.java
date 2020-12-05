@@ -23,8 +23,7 @@ public class Server {
 
         try (var listener = new ServerSocket(PORT)) {
             System.out.println("Server is running ...");
-//            var pool = Executors.newFixedThreadPool(20); // should not be fixed
-            while (true) { // after this ends, make sure to signal them to exit
+            while (true) {
                 Socket client = listener.accept();
 
                 Thread t = new Thread(new ClientMessageReceiver(client, InternalMessageBQ));

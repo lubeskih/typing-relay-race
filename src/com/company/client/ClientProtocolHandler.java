@@ -105,8 +105,29 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case ":ping": healthcheck(); break;
             case ":logout": logout(); break;
             case ":create": processCreateTeamInput(split); break;
+            case ":join": joinTeam(split); break;
+            case ":teams": teams(); break;
             default: System.out.println("Command is valid but not yet implemented!"); break;
         }
+    }
+
+    private void teams() {
+        String payload = "";
+        Message m = new Message(false, 350, false, payload);
+        this.bq.add(m);
+    }
+
+    private void joinTeam(String[] input) {
+        if (input.length != 2) {
+            System.out.println("Invalid join input! Use: :join <teamname>");
+            return;
+        }
+
+        String teamname = input[1];
+
+        Message m = new Message(false, 340, false, teamname);
+
+        this.bq.add(m);
     }
 
     private void logout() {

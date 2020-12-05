@@ -35,8 +35,62 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             case 320: return P320(im);
             case 330: return P330(im);
             case 370: return P370(im);
+            case 340: return P340(im);
+            case 350: return P350(im);
             default: return PDEFAULT(im);
         }
+    }
+
+    private InternalMessage P350(InternalMessage im) {
+        Message replyMessage;
+        InternalMessage reply;
+        String payload;
+
+        try {
+            this.authenticate(im.message.getSessionToken());
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        payload = this.store.teams.toString();
+        replyMessage = new Message(true, 100, false, payload);
+        reply = new InternalMessage(replyMessage, im.address);
+        return reply;
+    }
+
+    private InternalMessage P340(InternalMessage im) {
+        Message replyMessage;
+        InternalMessage reply;
+        String payload;
+
+        try {
+            this.authenticate(im.message.getSessionToken());
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        String teamname = (String) im.message.payload;
+        LoggedInUser member = this.store.loggedInUsers.get(im.message.getSessionToken());
+
+        try {
+            this.store.teams.get(teamname).memberTwo = member;
+        } catch (Exception e) {
+            payload = e.getMessage();
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
+        payload = "Successfully joined the team + " + this.store.teams.get(teamname).teamname + " which owner is " + this.store.teams.get(teamname).memberOne.username;
+        replyMessage = new Message(true, 100, false, payload);
+        reply = new InternalMessage(replyMessage, im.address);
+        return reply;
     }
 
     private synchronized InternalMessage P330(InternalMessage im) {
