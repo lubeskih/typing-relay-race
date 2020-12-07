@@ -7,9 +7,12 @@ import com.company.shared.payloads.RegisterPayload;
 
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerProtocolHandler extends ProtocolDictionary {
     private Store store;
+    private BlockingQueue<InternalMessage> OutboundMessageBQ;
 
     private static final SecureRandom secureRandom = new SecureRandom();
 //    private static final SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
@@ -21,9 +24,10 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return base64Encoder.encodeToString(randomBytes);
     }
 
-    public ServerProtocolHandler(Store store) {
+    public ServerProtocolHandler(Store store, BlockingQueue<InternalMessage> OutboundMessageBQ) {
         super();
         this.store = store;
+        this.OutboundMessageBQ = OutboundMessageBQ;
     }
 
     public synchronized InternalMessage process (InternalMessage im) {
@@ -76,6 +80,14 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         }
 
         String teamname = (String) im.message.payload;
+
+        if (!(store.teamExists(teamname))) {
+            payload = "Team does not exists.";
+            replyMessage = new Message(true, 210, true, payload);
+            reply = new InternalMessage(replyMessage, im.address);
+            return reply;
+        }
+
         LoggedInUser member = this.store.loggedInUsers.get(im.message.getSessionToken());
 
         try {
@@ -87,9 +99,26 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             return reply;
         }
 
-        payload = "Successfully joined the team + " + this.store.teams.get(teamname).teamname + " which owner is " + this.store.teams.get(teamname).memberOne.username;
+        payload = "Successfully joined the team + " + teamname + " which owner is " + this.store.teams.get(teamname).memberOne.username;
         replyMessage = new Message(true, 100, false, payload);
         reply = new InternalMessage(replyMessage, im.address);
+
+        member.team = store.teams.get(teamname);
+
+        try {
+            BlockingQueue gcbq = new LinkedBlockingQueue<>();
+            this.store.gameCoordinationBQs.put(teamname, gcbq);
+            GameCoordinator gc = new GameCoordinator(teamname, store, gcbq, this.OutboundMessageBQ);
+
+            Thread gct = new Thread(gc);
+            gct.start();
+
+            System.out.println("Game coordinator for team " + teamname + " created!");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+
         return reply;
     }
 
@@ -119,6 +148,8 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         }
 
         System.out.println(this.store.teams.toString());
+
+        memberOne.team = store.teams.get(teamname);
 
         payload = "Team created!";
         replyMessage = new Message(true, 100, false, payload);

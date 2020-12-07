@@ -1,12 +1,14 @@
 package com.company.server;
 
 import java.io.ObjectOutputStream;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Store {
     public ConcurrentHashMap<String, User> registeredUsers = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, LoggedInUser> loggedInUsers = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, Team> teams = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, BlockingQueue<InternalMessage>> gameCoordinationBQs = new ConcurrentHashMap<>();
 
     public Store() {}
 
@@ -18,6 +20,28 @@ public class Store {
         } else {
             this.registeredUsers.put(username, user);
         }
+    }
+
+    public boolean isAuthenticated(String sessionToken) {
+        if (sessionToken == null || !(this.loggedInUsers.containsKey(sessionToken))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public boolean isInGame(String sessionToken) {
+        LoggedInUser user = loggedInUsers.get(sessionToken);
+
+        if (user.team != null && gameCoordinationBQs.containsKey(user.team.teamname)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public LoggedInUser getUser(String sessionToken) {
+        return loggedInUsers.get(sessionToken);
     }
 
     public synchronized void loginUser(User user, ObjectOutputStream address, String sessionToken) {
@@ -42,5 +66,9 @@ public class Store {
 
         Team team = new Team(teamname, memberOne);
         this.teams.put(teamname, team);
+    }
+
+    public boolean teamExists(String teamname) {
+        return teams.containsKey(teamname);
     }
 }

@@ -8,13 +8,16 @@ public class MessageProcessor implements Runnable {
     private final BlockingQueue<InternalMessage> OutboundMessageBQ;
     private final BlockingQueue<InternalMessage> InternalMessageBQ;
     private final ServerProtocolHandler protocol;
+    private Store store;
 
     public MessageProcessor(BlockingQueue<InternalMessage> InternalMessageBQ,
                             ServerProtocolHandler protocol,
-                            BlockingQueue<InternalMessage> OutboundMessageBQ) {
+                            BlockingQueue<InternalMessage> OutboundMessageBQ,
+                            Store store) {
         this.OutboundMessageBQ = OutboundMessageBQ;
         this.protocol = protocol;
         this.InternalMessageBQ = InternalMessageBQ;
+        this.store = store;
     }
 
     @Override
@@ -42,8 +45,16 @@ public class MessageProcessor implements Runnable {
 
         @Override
         public void run() {
-            InternalMessage im = protocol.process(this.m);
-            this.OutboundMessageBQ.add(im);
+
+            String token = m.message.getSessionToken();
+
+            if (store.isAuthenticated(token) && store.isInGame(token)) {
+                LoggedInUser user = store.getUser(token);
+                store.gameCoordinationBQs.get(user.team.teamname).add(m);
+            } else {
+                InternalMessage im = protocol.process(this.m);
+                this.OutboundMessageBQ.add(im);
+            }
         }
     }
 }

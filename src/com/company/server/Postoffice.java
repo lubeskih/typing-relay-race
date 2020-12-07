@@ -19,8 +19,15 @@ public class Postoffice implements Runnable {
             while(true) {
                 InternalMessage m = this.OutboundMessageBQ.take();
 
-                Thread deliver = new Thread(new Postman(m.message, m.address));
-                deliver.start();
+                try {
+                    m.address.writeObject(m.message);
+                    System.out.println("Sent a " + m.message.reply + " request with payload of " + m.message.payload);
+                } catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+
+//                Thread deliver = new Thread(new Postman(m.message, m.address));
+//                deliver.start();
             }
         } catch (InterruptedException exception) {
             exception.printStackTrace();
