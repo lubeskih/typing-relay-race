@@ -2,6 +2,7 @@ package com.company.client;
 
 public class Store {
     private String sessionToken = null;
+    public boolean nextMessageIsASentence = false;
 
     public Store() {}
 

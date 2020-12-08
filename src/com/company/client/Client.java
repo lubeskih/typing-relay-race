@@ -39,7 +39,9 @@ public class Client {
                         System.out.println("Invalid command! Type :help to list supported commands.");
                     }
                 } else {
-                    // think about it
+                    if (store.nextMessageIsASentence) {
+                        protocol.submitSentence(input);
+                    }
                 }
             }
 

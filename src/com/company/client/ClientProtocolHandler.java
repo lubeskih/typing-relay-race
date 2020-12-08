@@ -46,6 +46,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case 230: P230(); break;
             case 240: P240(); break;
             case 250: P250(); break;
+            case 260: P260(); break;
             case 300: P300(m); break;
             case 310: P310(); break;
             case 320: P320(); break;
@@ -53,6 +54,10 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case 340: P340(); break;
             case 350: P350(); break;
         }
+    }
+
+    private void P260() {
+        store.nextMessageIsASentence = true;
     }
 
     private void P350() {
@@ -111,6 +116,13 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case ":ready": ready(); break;
             default: System.out.println("Command is valid but not yet implemented!"); break;
         }
+    }
+
+    public void submitSentence(String sentence) {
+        String payload = sentence;
+        Message m = new Message(false, 100, false, payload);
+        this.bq.add(m);
+        store.nextMessageIsASentence = false;
     }
 
     private void ready() {
