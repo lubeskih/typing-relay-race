@@ -113,11 +113,21 @@ public class GameCoordinator implements Runnable {
                 }
             }
 
-            payload = "Both ready!";
+            payload = "Get ready! Game begins in 5 seconds ... ";
             Message both = new Message(false, 100, false, payload);
 
             sendMessage(both, p1);
             sendMessage(both, p2);
+
+            for (int i = 5; i >= 1; i--) {
+                payload = "Countdown: " + i;
+                both = new Message(false, 100, false, payload);
+
+                sendMessage(both, p1);
+                sendMessage(both, p2);
+
+                Thread.sleep(1000);
+            }
 
             payload = "Player 1 is starting first! Waiting to submit.";
             notify = new Message(false, 100, false, payload);
@@ -223,7 +233,7 @@ public class GameCoordinator implements Runnable {
 
             if (this.totalTeamTime != null) {
                 payload = "Total time for the team " + team.teamname +
-                        " is " + this.totalTeamTime.toSeconds() +
+                        " is " + (this.totalTeamTime.toMillis() / 1000) +
                         " seconds (" + this.totalTeamTime.toMinutes() + ") minutes.";
             } else {
                 payload = "You both failed to submit valid text. :(";

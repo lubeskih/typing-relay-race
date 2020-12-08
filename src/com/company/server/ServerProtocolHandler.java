@@ -99,7 +99,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             return reply;
         }
 
-        payload = "Successfully joined the team + " + teamname + " which owner is " + this.store.teams.get(teamname).memberOne.username;
+        payload = "Successfully joined the team " + teamname.toUpperCase() + " whose owner is " + this.store.teams.get(teamname).memberOne.username.toUpperCase();
         replyMessage = new Message(true, 100, false, payload);
         reply = new InternalMessage(replyMessage, im.address);
 
