@@ -208,7 +208,11 @@ public class GameCoordinator implements Runnable {
                 this.p2totalTime = Duration.between(starts, end);
                 payload = "Player 2 took: " + this.p2totalTime.getSeconds() + " seconds (" + this.p2totalTime.toMinutes() + " minutes).";
 
-                this.totalTeamTime = this.totalTeamTime.plus(Duration.between(starts, end));
+                if (this.totalTeamTime != null) {
+                    this.totalTeamTime = this.totalTeamTime.plus(Duration.between(starts, end));
+                } else {
+                    this.totalTeamTime = Duration.between(starts, end);
+                }
 
                 notify = new Message(false, 100, false, payload);
                 sendMessage(notify, p1);
@@ -217,9 +221,14 @@ public class GameCoordinator implements Runnable {
                 this.p1totalTime = null;
             }
 
-            payload = "Total time for the team " + team.teamname +
-                    " is " + this.totalTeamTime.toSeconds() +
-                    " seconds (" + this.totalTeamTime.toMinutes() + ") minutes.";
+            if (this.totalTeamTime != null) {
+                payload = "Total time for the team " + team.teamname +
+                        " is " + this.totalTeamTime.toSeconds() +
+                        " seconds (" + this.totalTeamTime.toMinutes() + ") minutes.";
+            } else {
+                payload = "You both failed to submit valid text. :(";
+            }
+
             notify = new Message(false, 100, false, payload);
             sendMessage(notify, p1);
             sendMessage(notify, p2);
