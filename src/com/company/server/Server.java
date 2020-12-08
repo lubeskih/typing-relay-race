@@ -13,9 +13,9 @@ public class Server {
         BlockingQueue<InternalMessage> OutboundMessagesBQ = new LinkedBlockingDeque<>();
         Store store = new Store();
 
-        ServerProtocolHandler protocol = new ServerProtocolHandler(store);
+        ServerProtocolHandler protocol = new ServerProtocolHandler(store, OutboundMessagesBQ);
 
-        Thread mp = new Thread(new MessageProcessor(InternalMessageBQ, protocol, OutboundMessagesBQ));
+        Thread mp = new Thread(new MessageProcessor(InternalMessageBQ, protocol, OutboundMessagesBQ, store));
         mp.start();
 
         Thread pm = new Thread(new Postoffice(OutboundMessagesBQ));
