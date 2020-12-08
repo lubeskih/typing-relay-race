@@ -289,7 +289,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             return reply;
         }
 
-        payload = "Everyone won!";
+        payload = store.scoreboard.viewScoreboard();
 
         replyMessage = new Message(true, 320, false, payload);
         reply = new InternalMessage(replyMessage, im.address);

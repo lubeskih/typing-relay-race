@@ -9,6 +9,7 @@ public class Store {
     public ConcurrentHashMap<String, LoggedInUser> loggedInUsers = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, Team> teams = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, BlockingQueue<InternalMessage>> gameCoordinationBQs = new ConcurrentHashMap<>();
+    public Scoreboard scoreboard = new Scoreboard();
 
     public Store() {}
 

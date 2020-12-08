@@ -56,7 +56,6 @@ public class GameCoordinator implements Runnable {
             sendMessage(m, p1);
             sendMessage(m, p2);
 
-
             payload = "Please send :ready.";
             ask = new Message(false, 100, false, payload);
             sendMessage(ask, p1);
@@ -235,6 +234,9 @@ public class GameCoordinator implements Runnable {
                 payload = "Total time for the team " + team.teamname +
                         " is " + (this.totalTeamTime.toMillis() / 1000) +
                         " seconds (" + this.totalTeamTime.toMinutes() + ") minutes.";
+
+                Score score = new Score(this.team.teamname, this.totalTeamTime);
+                store.scoreboard.addNewScore(score);
             } else {
                 payload = "You both failed to submit valid text. :(";
             }
@@ -251,6 +253,15 @@ public class GameCoordinator implements Runnable {
         store.teams.get(team.teamname).memberOne.team = null;
         store.teams.get(team.teamname).memberTwo.team = null;
         store.teams.remove(team.teamname);
+
+        String payload = "Game coordination finished. Your team was removed, but if you scored, your score was logged. Create a new team to play again.";
+        Message notify = new Message(false, 100, false, payload);
+
+        ObjectOutputStream p1 = team.memberOne.address;
+        ObjectOutputStream p2 = team.memberTwo.address;
+
+        sendMessage(notify, p1);
+        sendMessage(notify, p2);
 
         System.out.println("Game done. Resetting everything.");
     }

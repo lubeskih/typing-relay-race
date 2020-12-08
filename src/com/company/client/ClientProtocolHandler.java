@@ -5,6 +5,7 @@ import com.company.shared.ProtocolDictionary;
 import com.company.shared.payloads.LoginPayload;
 import com.company.shared.payloads.RegisterPayload;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 
@@ -49,7 +50,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
             case 260: P260(); break;
             case 300: P300(m); break;
             case 310: P310(); break;
-            case 320: P320(); break;
+            case 320: P320(m); break;
             case 330: P330(); break;
             case 340: P340(); break;
             case 350: P350(); break;
@@ -69,7 +70,22 @@ public class ClientProtocolHandler extends ProtocolDictionary {
     private void P330() {
     }
 
-    private void P320() {
+    private void P320(Message m) {
+        Base64.Decoder decoder = Base64.getDecoder();
+
+        if (m.payload instanceof String) {
+            String b64scoreboard = (String) m.payload;
+
+            try {
+                String scoreboard = new String(decoder.decode(b64scoreboard.getBytes()));
+                System.out.println(scoreboard);
+            } catch (Exception e) {
+                System.out.println("Error while trying to decode scoreboard base64!");
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Scoreboard error! Payload is not String!");
+        }
     }
 
     private void P310() {
