@@ -72,8 +72,10 @@ public class ClientProtocolHandler {
         } else if (m.payload instanceof InfoPayload) {
             mp = ((InfoPayload) m.payload).message;
 
-            if (mp.equals("START TYPING.")) {
+            if (mp.startsWith("Write back this text, fast!")) {
                 store.nextMessageIsASentence = true;
+            } else if (mp.equals("Correct!")) {
+                store.nextMessageIsASentence = false;
             }
 
             System.out.println(mp);
@@ -96,6 +98,9 @@ public class ClientProtocolHandler {
             }
         } else if (m.payload instanceof ForbiddenPayload) {
             mp = ((ForbiddenPayload) m.payload).message;
+            System.out.println(mp);
+        } else if (m.payload instanceof BadRequestPayload) {
+            mp = ((BadRequestPayload) m.payload).message;
             System.out.println(mp);
         }
     }
@@ -163,14 +168,16 @@ public class ClientProtocolHandler {
     }
 
     public void submitSentence(String sentence) {
-        Message m = new Message(false, 100, false, sentence);
+        InfoPayload ip = new InfoPayload(sentence);
+        Message m = new Message(false, 110, false, ip);
+
         this.messageBlockingQueue.add(m);
-        store.nextMessageIsASentence = false;
     }
 
     private void ready() {
-        String payload = "ready";
-        Message m = new Message(false, 100, false, payload);
+        InfoPayload ip = new InfoPayload("ready");
+        Message m = new Message(false, 110, false, ip);
+
         this.messageBlockingQueue.add(m);
     }
 
@@ -181,14 +188,23 @@ public class ClientProtocolHandler {
     }
 
     private void joinTeam(String[] input) {
-        if (input.length != 2) {
-            System.out.println("Invalid join input! Use: :join <teamname>");
+        String teamname;
+        String password;
+
+        if (input.length == 3) {
+            teamname= input[1];
+            password = input[2];
+        } else if (input.length == 2) {
+            teamname = input[1];
+            password = "";
+        } else {
+            System.out.println("Invalid join input! Use: :join <teamname> <password>");
+            System.out.println("You can leave the password field empty if joining a public team!");
             return;
         }
 
-        String teamname = input[1];
-
-        Message m = new Message(false, 340, false, teamname);
+        JoinTeamPayload jtp = new JoinTeamPayload(teamname, password);
+        Message m = new Message(false, 100, false, jtp);
 
         this.messageBlockingQueue.add(m);
     }

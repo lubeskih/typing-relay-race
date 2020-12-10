@@ -1,61 +1,76 @@
 package com.company.server;
 
 import com.company.server.types.InternalMessage;
-import com.company.server.types.LoggedInUser;
+import com.company.shared.Message;
+import com.company.shared.payloads.*;
 
-import java.util.concurrent.BlockingQueue;
+import java.io.ObjectOutputStream;
 
-public class MessageProcessor implements Runnable {
-    private final BlockingQueue<InternalMessage> OutboundMessageBQ;
-    private final BlockingQueue<InternalMessage> InternalMessageBQ;
-    private final ServerProtocolHandler protocol;
-    private Store store;
+public class MessageProcessor {
+    Store store;
 
-    public MessageProcessor(BlockingQueue<InternalMessage> InternalMessageBQ,
-                            ServerProtocolHandler protocol,
-                            BlockingQueue<InternalMessage> OutboundMessageBQ,
-                            Store store) {
-        this.OutboundMessageBQ = OutboundMessageBQ;
-        this.protocol = protocol;
-        this.InternalMessageBQ = InternalMessageBQ;
+    public MessageProcessor(Store store) {
         this.store = store;
     }
 
-    @Override
-    public void run() {
-        try {
-            while(true) {
-                InternalMessage m = this.InternalMessageBQ.take();
-                Thread ProcessMessageThread = new Thread(new ProcessMessage(m, this.OutboundMessageBQ));
-                ProcessMessageThread.start();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+    public InternalMessage process(InternalMessage im) {
+        Message newMessage;
+        InternalMessage newIm;
+
+        if (im.message.payload instanceof RegisterPayload) {
+            newMessage = registerUser((RegisterPayload) im.message.payload);
+        } else if (im.message.payload instanceof LoginPayload) {
+            newMessage = loginUser((LoginPayload) im.message.payload, im.message.getSessionToken(), im.address);
+        } else if (im.message.payload instanceof ScoreboardPayload) {
+            newMessage = showScoreboard(im.message.getSessionToken());
+        } else if (im.message.payload instanceof CreateTeamPayload) {
+            newMessage = createTeam((CreateTeamPayload) im.message.payload, im.message.getSessionToken());
+        } else if (im.message.payload instanceof JoinTeamPayload) {
+            newMessage = joinTeam((JoinTeamPayload) im.message.payload, im.message.getSessionToken());
+        } else {
+            InfoPayload ip = new InfoPayload("Bad Request. Not existing payload.");
+            newMessage = new Message(true, 200, true, ip);
         }
+
+        newIm = new InternalMessage(newMessage, im.address);
+        return newIm;
     }
 
-    private class ProcessMessage implements Runnable {
-        private final InternalMessage m;
-        private final BlockingQueue<InternalMessage> OutboundMessageBQ;
-
-        public ProcessMessage(InternalMessage m,
-                              BlockingQueue<InternalMessage> OutboundMessageBQ) {
-            this.m = m;
-            this.OutboundMessageBQ = OutboundMessageBQ;
+    private Message joinTeam(JoinTeamPayload payload, String sessionToken) {
+        if (!store.isAuthenticated(sessionToken)) {
+            return store.notAuthenticatedMessage();
         }
 
-        @Override
-        public void run() {
+        String teamname = payload.teamname;
+        String password = payload.password;
 
-            String token = m.message.getSessionToken();
+        return store.joinTeam(teamname, password, sessionToken);
+    }
 
-            if (store.isAuthenticated(token) && store.isInGame(token)) {
-                LoggedInUser user = store.getUser(token);
-                store.gameCoordinationBQs.get(user.team.teamname).add(m);
-            } else {
-                InternalMessage im = protocol.process(this.m);
-                this.OutboundMessageBQ.add(im);
-            }
+    private Message createTeam(CreateTeamPayload payload, String sessionToken) {
+        if (!store.isAuthenticated(sessionToken)) {
+            return store.notAuthenticatedMessage();
         }
+
+        String teamname = payload.teamname;
+        boolean openToAll = payload.openToAll;
+
+        return store.createTeam(teamname, openToAll, sessionToken);
+    }
+
+    private Message showScoreboard(String sessionToken) {
+        if (!store.isAuthenticated(sessionToken)) {
+            return store.notAuthenticatedMessage();
+        }
+
+        return store.viewScoreboard();
+    }
+
+    private Message loginUser(LoginPayload payload, String sessionToken, ObjectOutputStream address) {
+        return store.loginUser(payload.username, payload.password, sessionToken, address);
+    }
+
+    private Message registerUser(RegisterPayload payload) {
+        return store.registerUser(payload.username, payload.password);
     }
 }

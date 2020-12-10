@@ -105,7 +105,7 @@ class Write implements Runnable {
 
             do {
                 Message m = bq.take();
-                String sessionToken = this.store.getSessionToken();
+                String sessionToken = store.getSessionToken();
 
                 // if we have a session token in the Store
                 // then every outbound message will have

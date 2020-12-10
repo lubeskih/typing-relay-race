@@ -4,17 +4,19 @@ import com.company.server.types.*;
 import com.company.shared.Message;
 import com.company.shared.payloads.*;
 
+import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Store {
     public ConcurrentHashMap<String, User> registeredUsers = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, LoggedInUser> loggedInUsers = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, Team> teams = new ConcurrentHashMap<>();
-    public ConcurrentHashMap<String, BlockingQueue<InternalMessage>> gameCoordinationBQs = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, BlockingQueue<Message>> gameCoordinationBQs = new ConcurrentHashMap<>();
     public Scoreboard scoreboard = new Scoreboard();
 
     public Store() {}
@@ -35,7 +37,10 @@ public class Store {
         return m;
     }
 
-    public synchronized Message loginUser(String username, String password, String sessionToken) {
+    public synchronized Message loginUser(String username,
+                                          String password,
+                                          String sessionToken,
+                                          ObjectOutputStream address) {
         Message m;
         User user;
 
@@ -58,11 +63,18 @@ public class Store {
             }
         }
 
+        // check if password is correct
+        if (!user.hash.equals(password)) {
+            ForbiddenPayload fp = new ForbiddenPayload("Invalid credentials.");
+            m = new Message(true, 220, true, fp);
+            return m;
+        }
+
         // Generate new token
         String newSessionToken = generateNewToken();
 
         // log in the user
-        LoggedInUser loggedInuser = new LoggedInUser(user.username, user.hash, null);
+        LoggedInUser loggedInuser = new LoggedInUser(user.username, user.hash, address);
         loggedInUsers.put(newSessionToken, loggedInuser);
 
         // reply
@@ -113,7 +125,7 @@ public class Store {
 
         if (teams.values()
                 .stream()
-                .filter(t -> t.admin.equals(admin) || (t.memberTwo != null && t.memberTwo.equals(admin))) // || t.memberTwo.equals(admin)
+                .filter(t -> t.admin.equals(admin) || (t.memberTwo != null && t.memberTwo.equals(admin)))
                 .findAny()
                 .isPresent()
         ) {
@@ -135,10 +147,67 @@ public class Store {
             m = new Message(true, 100, false, sp);
         }
 
-        admin.team = teams.get(teamname);
-
         teams.put(teamname, team);
+        admin.team = team;
+
         return m;
+    }
+
+    public synchronized Message joinTeam(String teamname, String password, String sessionToken) {
+        Message m;
+        Team team = teams.get(teamname);
+
+        // check if team exists
+        if (!teamExists(teamname)) {
+            NotFoundPayload nfp = new NotFoundPayload("Team does not exists.");
+            m = new Message(true, 240, true, nfp);
+            return m;
+        }
+
+        // check if team requires passcode
+        if (!team.visible) {
+            if (!team.password.equals(password)) {
+                ForbiddenPayload fp = new ForbiddenPayload("Invalid passcode.");
+                m = new Message(true, 220, true, fp);
+                return m;
+            }
+        }
+
+        LoggedInUser member = loggedInUsers.get(sessionToken);
+
+        if (team.admin.username.equals(member.username)) {
+            ConflictPayload cp = new ConflictPayload("You cannot join your own team. Already joined.");
+            m = new Message(true, 230, true, cp);
+            return m;
+        }
+
+        // check if team is full
+        if (teams.get(teamname).memberTwo != null) {
+            ConflictPayload cp = new ConflictPayload("Someone joined before you! Sorry.");
+            m = new Message(true, 230, true, cp);
+            return m;
+        } else {
+            team.memberTwo = member;
+            member.team = team;
+        }
+
+        SuccessPayload sp = new SuccessPayload("You joined the team " + teamname.toUpperCase() + " whose owner is " + team.admin.username.toUpperCase());
+        m = new Message(true, 100, false, sp);
+
+        spawnGameCoordinator(teamname);
+
+        return m;
+    }
+
+    public synchronized void spawnGameCoordinator(String teamname) {
+        BlockingQueue<Message> gameCoordinatorBQ = new LinkedBlockingQueue<>();
+        gameCoordinationBQs.put(teamname, gameCoordinatorBQ);
+        GameCoordinator gameCoordinator = new GameCoordinator(teamname, this);
+
+        Thread gct = new Thread(gameCoordinator);
+        gct.start();
+
+        System.out.println("Game coordinator for team " + teamname + " spawned!");
     }
 
     //////////////////////
@@ -188,9 +257,13 @@ public class Store {
     }
 
     public boolean isInGame(String sessionToken) {
-        LoggedInUser user = loggedInUsers.get(sessionToken);
+        if (sessionToken != null) {
+            LoggedInUser user = loggedInUsers.get(sessionToken);
 
-        return user.team != null && gameCoordinationBQs.containsKey(user.team.teamname);
+            return user.team != null && gameCoordinationBQs.containsKey(user.team.teamname);
+        } else {
+            return false;
+        }
     }
 
     public LoggedInUser getUser(String sessionToken) {

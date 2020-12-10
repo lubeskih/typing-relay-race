@@ -10,12 +10,12 @@ import java.util.concurrent.BlockingQueue;
 
 public class ClientMessageReceiver implements Runnable {
     private Socket socket;
-    MessageProcessing messageProcessor;
+    MessageProcessor messageProcessor;
     private Store store;
 
     ClientMessageReceiver(Socket socket, Store store) {
         this.socket = socket;
-        this.messageProcessor = new MessageProcessing(store);
+        this.messageProcessor = new MessageProcessor(store);
         this.store = store;
     }
 
@@ -32,8 +32,6 @@ public class ClientMessageReceiver implements Runnable {
 
                 String token = received.getSessionToken();
 
-                System.out.println("User sent a token which is: " + received.getSessionToken());
-
                 // pass to MP
                 // get from MP
                 // hasToken and inGame? pass to GameCoordinator
@@ -46,8 +44,8 @@ public class ClientMessageReceiver implements Runnable {
                     // pass to GC
                     LoggedInUser user = store.getUser(token);
 
-                    BlockingQueue assignedGameCoordinator = this.store.gameCoordinationBQs.get(user.team.teamname);
-                    assignedGameCoordinator.add(message);
+                    BlockingQueue<Message> assignedGameCoordinator = this.store.gameCoordinationBQs.get(user.team.teamname);
+                    assignedGameCoordinator.add(received);
                 } else {
                     InternalMessage im = messageProcessor.process(message);
 

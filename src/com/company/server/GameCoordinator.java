@@ -5,31 +5,38 @@ import com.company.server.types.LoggedInUser;
 import com.company.server.types.Score;
 import com.company.server.types.Team;
 import com.company.shared.Message;
+import com.company.shared.payloads.BadRequestPayload;
+import com.company.shared.payloads.InfoPayload;
 
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.BlockingQueue;
 
 public class GameCoordinator implements Runnable {
-    private Team team;
-    private Store store;
-    private BlockingQueue<InternalMessage> bq;
-    private BlockingQueue<InternalMessage> OutboundMessageBQ;
+    private final Store store;
+
+    private final Team team;
+    private final BlockingQueue<Message> messageBlockingQueue;
+
+    LoggedInUser p1;
+    LoggedInUser p2;
+
     Duration p1totalTime;
     Duration p2totalTime;
     Duration totalTeamTime;
 
     private Checklist checklist;
 
-    public GameCoordinator(String teamname,
-                           Store store,
-                           BlockingQueue<InternalMessage> bq,
-                           BlockingQueue<InternalMessage> OutboundMessageBQ) {
+    public GameCoordinator(String teamname, Store store) {
         this.store = store;
         this.team = store.teams.get(teamname);
-        this.bq = bq;
-        this.OutboundMessageBQ = OutboundMessageBQ;
+
+        this.p1 = team.admin;
+        this.p2 = team.memberTwo;
+
+        this.messageBlockingQueue = store.gameCoordinationBQs.get(teamname);
         this.checklist = new Checklist();
     }
 
@@ -39,215 +46,236 @@ public class GameCoordinator implements Runnable {
         return team.admin.username.equals(name);
     }
 
-    private void sendMessage(Message m, ObjectOutputStream address) {
-        InternalMessage reply = new InternalMessage(m, address);
-        this.OutboundMessageBQ.add(reply);
+    private synchronized void sendMessage(Message m, LoggedInUser player) {
+        try {
+            player.address.writeObject(m);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
     }
 
     @Override
     public void run() {
+        LoggedInUser p1 = this.p1;
+        LoggedInUser p2 = this.p2;
+
+        InfoPayload ip;
+        BadRequestPayload brp;
+        Message m;
+
         try {
-            Message ask;
-            Message notify;
-            String payload;
+            ip = new InfoPayload(team.memberTwo.username + " joined your team.");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, this.p1);
 
-            ObjectOutputStream p1 = team.admin.address;
-            ObjectOutputStream p2 = team.memberTwo.address;
-
-            payload = "Game is about to begin!";
-            Message m = new Message(false, 100, false, payload);
-
+            ip = new InfoPayload("Game is about to begin!");
+            m = new Message(false, 110, false, ip);
             sendMessage(m, p1);
             sendMessage(m, p2);
 
-            payload = "Please send :ready.";
-            ask = new Message(false, 100, false, payload);
-            sendMessage(ask, p1);
+            ip = new InfoPayload("Please send :ready.");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
 
-
-            payload = "Waiting on Player 1 to accept!";
-            notify = new Message(false, 100, false, payload);
-            sendMessage(notify, p2);
-
+            ip = new InfoPayload("Waiting on player " + team.admin.username + " to accept!");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p2);
 
             while (!(checklist.p1IsReady)) {
-                InternalMessage im = bq.take();
+                Message receivedMessage = messageBlockingQueue.take();
+                String token = receivedMessage.getSessionToken();
 
-                if (!(isOwner(im.message.getSessionToken()))) {
-                    payload = "Not your turn to accept. Wait.";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p2);
+                if (!(isOwner(token))) {
+                    ip = new InfoPayload("Not your turn to accept. Wait for your turn.");
+                    m = new Message(false, 110, false, ip);
+                    sendMessage(m, p2);
                     continue;
                 }
 
-                if (im.message.payload.equals("ready")) {
-                    checklist.p1IsReady = true;
+                if (!(receivedMessage.payload instanceof InfoPayload)) {
+                    brp = new BadRequestPayload("Invalid payload. Might be a bug within the client.");
+                    m = new Message(true, 200, true, brp);
+                    sendMessage(m, p1);
+                    continue;
                 } else {
-                    payload = "Didn't understand. Send 'ready'.";
-                    ask = new Message(false, 100, false, payload);
-                    sendMessage(ask, p1);
+                    if (((InfoPayload) receivedMessage.payload).message.equals("ready")) {
+                        checklist.p1IsReady = true;
+                    } else {
+                        ip = new InfoPayload("Didn't understand. Type ':ready'.");
+                        m = new Message(false, 110, false, ip);
+                        sendMessage(m, p1);
+                    }
                 }
             }
 
-            payload = "Waiting on Player 2 to accept!";
-            notify = new Message(false, 100, false, payload);
-            sendMessage(notify, p1);
+            ip = new InfoPayload("OK. Now waiting on player " + team.memberTwo.username + " to accept!");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
 
-            payload = "Player 1 accepted. Please send :ready to accept.";
-            ask = new Message(false, 100, false, payload);
-            sendMessage(ask, p2);
+            ip = new InfoPayload("Player " + team.admin.username + " accepted. It's your turn. Type :ready to accept.");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p2);
 
             while (!(checklist.p2IsReady)) {
-                InternalMessage im = bq.take();
+                Message receivedMessage = messageBlockingQueue.take();
+                String token = receivedMessage.getSessionToken();
 
-                if ((isOwner(im.message.getSessionToken()))) {
-                    payload = "You already accepted, I'm now waiting on Player 2.";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p1);
+                if ((isOwner(token))) {
+                    ip = new InfoPayload("You already accepted. Waiting on " + team.memberTwo.username + ".");
+                    m = new Message(false, 110, false, ip);
+                    sendMessage(m, p1);
                     continue;
                 }
 
-                if (im.message.payload.equals("ready")) {
-                    checklist.p2IsReady = true;
+                if (!(receivedMessage.payload instanceof InfoPayload)) {
+                    brp = new BadRequestPayload("Invalid payload. Might be a bug within the client.");
+                    m = new Message(true, 200, true, brp);
+                    sendMessage(m, p2);
+                    continue;
                 } else {
-                    payload = "Didn't understand. Send 'ready'.";
-                    ask = new Message(false, 100, false, payload);
-                    sendMessage(ask, p2);
+                    if (((InfoPayload) receivedMessage.payload).message.equals("ready")) {
+                        checklist.p2IsReady = true;
+                    } else {
+                        ip = new InfoPayload("Didn't understand. Type ':ready'.");
+                        m = new Message(false, 110, false, ip);
+                        sendMessage(m, p2);
+                    }
                 }
             }
 
-            payload = "Get ready! Game begins in 5 seconds ... ";
-            Message both = new Message(false, 100, false, payload);
-
-            sendMessage(both, p1);
-            sendMessage(both, p2);
+            ip = new InfoPayload("Get ready! Game begins in ...");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
+            sendMessage(m, p2);
 
             for (int i = 5; i >= 1; i--) {
-                payload = "Countdown: " + i;
-                both = new Message(false, 100, false, payload);
-
-                sendMessage(both, p1);
-                sendMessage(both, p2);
+                ip = new InfoPayload("Countdown: " + i);
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
+                sendMessage(m, p2);
 
                 Thread.sleep(1000);
             }
 
-            payload = "Player 1 is starting first! Waiting to submit.";
-            notify = new Message(false, 100, false, payload);
-            sendMessage(notify, p2);
+            ip = new InfoPayload("Player " + team.admin.username + " is starting first. Waiting to submit.");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p2);
 
-            String generatedText = "Hello world!";
-            payload = "Write back this text, fast!\n\n" + generatedText;
-            ask = new Message(false, 260, false, payload);
-            sendMessage(ask, p1);
 
-            Instant starts = Instant.now();
+            String generatedText = "Quick black dog!";
+            ip = new InfoPayload("Write back this text, fast!\n\n" + generatedText);
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
+
+            Instant start = Instant.now();
             while (!(checklist.p1done)) {
-                InternalMessage im = bq.take();
+                Message receivedMessage = messageBlockingQueue.take();
+                String token = receivedMessage.getSessionToken();
 
-                if (!(isOwner(im.message.getSessionToken()))) {
-                    payload = "Not your turn to submit. Wait.";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p2);
+                if (!(isOwner(token))) {
+                    ip = new InfoPayload("Not your turn to submit. Wait for your turn.");
+                    m = new Message(false, 110, false, ip);
+                    sendMessage(m, p2);
                     continue;
                 }
 
-                if (im.message.payload.equals(generatedText)) {
+                if (((InfoPayload) receivedMessage.payload).message.equals(generatedText)) {
                     checklist.p1done = true;
                     checklist.p1valid = true;
-                } else {
-                    payload = "Wrong text! Will not be counted. :(";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p1);
 
-                    payload = "Player 1 submitted wrong text and will not be counted!";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p2);
-                    break;
+                    ip = new InfoPayload("Correct!");
+                } else {
+                    ip = new InfoPayload("Wrong submission! Try again, fast!");
                 }
+
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
             }
 
             if (checklist.p1valid) {
                 Instant end = Instant.now();
-                this.p1totalTime = Duration.between(starts, end);
-                payload = "Player 1 took: " + this.p1totalTime.getSeconds() + " seconds, or " + this.p1totalTime.toMinutes() + " minutes.";
+                this.p1totalTime = Duration.between(start, end);
 
-                this.totalTeamTime = Duration.between(starts, end);
+                ip = new InfoPayload("It took " + team.admin.username + " " + p1totalTime.getSeconds() + " seconds to finish. That adds up to " +  p1totalTime.toMinutes() + " minutes.");
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p2);
 
-                notify = new Message(false, 100, false, payload);
-                sendMessage(notify, p1);
-                sendMessage(notify, p2);
+                ip = new InfoPayload("It took you " + p1totalTime.getSeconds() + " seconds to finish. That adds up to " +  p1totalTime.toMinutes() + " minutes.");
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
             } else {
-                this.p1totalTime = null;
+                p1totalTime = null;
             }
 
-            payload = "Player 2's turn! Waiting to submit.";
-            notify = new Message(false, 100, false, payload);
-            sendMessage(notify, p1);
+            ip = new InfoPayload("Now it's your turn!");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p2);
 
-            generatedText = "Hello morld!";
-            payload = "Write back this text, fast!\n\n" + generatedText;
-            ask = new Message(false, 260, false, payload);
-            sendMessage(ask, p2);
+            ip = new InfoPayload("Now it's " + team.memberTwo.username + " turn! Waiting to submit.");
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
 
-            starts = Instant.now();
+            generatedText = "Quick brown fox!";
+            ip = new InfoPayload("Write back this text, fast!\n\n" + generatedText);
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p2);
+
+            start = Instant.now();
             while (!(checklist.p2done)) {
-                InternalMessage im = bq.take();
+                Message receivedMessage = messageBlockingQueue.take();
+                String token = receivedMessage.getSessionToken();
 
-                if ((isOwner(im.message.getSessionToken()))) {
-                    payload = "Not your turn to submit. Wait.";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p1);
+                if ((isOwner(token))) {
+                    ip = new InfoPayload("You already submitted your text. Now waiting on " + team.memberTwo.username + ".");
+                    m = new Message(false, 110, false, ip);
+                    sendMessage(m, p1);
                     continue;
                 }
 
-                if (im.message.payload.equals(generatedText)) {
+                if (((InfoPayload) receivedMessage.payload).message.equals(generatedText)) {
                     checklist.p2done = true;
                     checklist.p2valid = true;
-                } else {
-                    payload = "Wrong text! Will not be counted. :(";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p2);
 
-                    payload = "Player 2 submitted wrong text and will not be counted!";
-                    notify = new Message(false, 100, false, payload);
-                    sendMessage(notify, p1);
-                    break;
+                    ip = new InfoPayload("Correct!");
+                } else {
+                    ip = new InfoPayload("Wrong submission! Try again, fast!");
                 }
+
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p2);
             }
 
             if (checklist.p2valid) {
                 Instant end = Instant.now();
-                this.p2totalTime = Duration.between(starts, end);
-                payload = "Player 2 took: " + this.p2totalTime.getSeconds() + " seconds (" + this.p2totalTime.toMinutes() + " minutes).";
+                this.p2totalTime = Duration.between(start, end);
 
-                if (this.totalTeamTime != null) {
-                    this.totalTeamTime = this.totalTeamTime.plus(Duration.between(starts, end));
-                } else {
-                    this.totalTeamTime = Duration.between(starts, end);
-                }
+                ip = new InfoPayload("It took " + team.memberTwo.username + " " + p2totalTime.getSeconds() + " seconds to finish. That adds up to " +  p2totalTime.toMinutes() + " minutes.");
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
 
-                notify = new Message(false, 100, false, payload);
-                sendMessage(notify, p1);
-                sendMessage(notify, p2);
+                ip = new InfoPayload("It took you " + p2totalTime.getSeconds() + " seconds to finish. That adds up to " +  p2totalTime.toMinutes() + " minutes.");
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p2);
+
+                totalTeamTime = p1totalTime.plus(p2totalTime);
             } else {
-                this.p1totalTime = null;
+                p2totalTime = null;
             }
 
             if (this.totalTeamTime != null) {
-                payload = "Total time for the team " + team.teamname +
-                        " is " + (this.totalTeamTime.toMillis() / 1000) +
-                        " seconds (" + this.totalTeamTime.toMinutes() + ") minutes.";
+                ip = new InfoPayload("Total time for the team " + team.teamname +
+                        " is " + (this.totalTeamTime.toSeconds()) +
+                        " seconds (" + this.totalTeamTime.toMinutes() + " minutes).");
 
                 Score score = new Score(this.team.teamname, this.totalTeamTime);
                 store.scoreboard.addNewScore(score);
             } else {
-                payload = "You both failed to submit valid text. :(";
+                ip = new InfoPayload("You both submitted wrong text. :(");
             }
 
-            notify = new Message(false, 100, false, payload);
-            sendMessage(notify, p1);
-            sendMessage(notify, p2);
+            m = new Message(false, 110, false, ip);
+            sendMessage(m, p1);
+            sendMessage(m, p2);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -258,16 +286,12 @@ public class GameCoordinator implements Runnable {
         store.teams.get(team.teamname).memberTwo.team = null;
         store.teams.remove(team.teamname);
 
-        String payload = "Game coordination finished. Your team was removed, but if you scored, your score was logged. Create a new team to play again.";
-        Message notify = new Message(false, 100, false, payload);
+        ip = new InfoPayload("Game coordination finished. Your team was removed, but if you scored, your score was logged. Create a new team to play again.");
+        m = new Message(false, 110, false, ip);
+        sendMessage(m, p1);
+        sendMessage(m, p2);
 
-        ObjectOutputStream p1 = team.admin.address;
-        ObjectOutputStream p2 = team.memberTwo.address;
-
-        sendMessage(notify, p1);
-        sendMessage(notify, p2);
-
-        System.out.println("Game done. Resetting everything.");
+        System.out.println("Game done for team " + team.teamname + ". Resetting everything.");
     }
 
     public static class Checklist {
