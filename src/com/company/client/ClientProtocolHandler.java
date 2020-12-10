@@ -1,22 +1,20 @@
 package com.company.client;
 
 import com.company.shared.Message;
-import com.company.shared.ProtocolDictionary;
-import com.company.shared.payloads.LoginPayload;
-import com.company.shared.payloads.RegisterPayload;
+import com.company.shared.payloads.*;
 
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 
-public class ClientProtocolHandler extends ProtocolDictionary {
-    public BlockingQueue<Message> bq;
+public class ClientProtocolHandler {
+    public BlockingQueue<Message> messageBlockingQueue;
     public HashMap<String, Boolean> commands = new HashMap<>();
     public Store store;
 
-    public ClientProtocolHandler(BlockingQueue<Message> bq, Store store) {
+    public ClientProtocolHandler(BlockingQueue<Message> messageBlockingQueue, Store store) {
         super();
-        this.bq = bq;
+        this.messageBlockingQueue = messageBlockingQueue;
         this.store = store;
 
         this.initCommands();
@@ -37,23 +35,68 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         this.commands.put(":ready", true);
     }
 
-    public void process (Message m) throws Exception {
-        int reply = m.reply;
+    //100     OK
+    //110     Info
+    //
+    //200     Bad Request
+    //210     Internal Server Error
+    //220     Forbidden
+    //230     Conflict
+    //240     Not Found
 
-        switch(reply) {
-            case 100: P100(m); break;
-            case 200: P200(); break;
-            case 210: P210(); break;
-            case 230: P230(); break;
-            case 240: P240(); break;
-            case 250: P250(); break;
-            case 260: P260(); break;
-            case 300: P300(m); break;
-            case 310: P310(); break;
-            case 320: P320(m); break;
-            case 330: P330(); break;
-            case 340: P340(); break;
-            case 350: P350(); break;
+    public String translate(int reply) {
+        switch (reply) {
+            case 100: return "OK";
+            case 110: return "Info";
+            case 200: return "Bad Request";
+            case 210: return "Internal Server Error";
+            case 220: return "Forbidden";
+            case 230: return "Conflict";
+            case 240: return "Not Found";
+            default: return "UNKNOWN STATUS CODE";
+        }
+    }
+
+    public void process (Message m) {
+        int reply = m.reply;
+        String mp;
+
+        System.out.print("[SERVER: " + translate(reply) + " (" + m.reply + ")] ");
+
+        if (m.payload instanceof SuccessPayload) {
+            mp = ((SuccessPayload) m.payload).message;
+            System.out.println(mp);
+        } else if (m.payload instanceof ConflictPayload) {
+            mp = ((ConflictPayload) m.payload).message;
+            System.out.println(mp);
+        } else if (m.payload instanceof InfoPayload) {
+            mp = ((InfoPayload) m.payload).message;
+
+            if (mp.equals("START TYPING.")) {
+                store.nextMessageIsASentence = true;
+            }
+
+            System.out.println(mp);
+        } else if (m.payload instanceof SessionPayload) {
+            String st = ((SessionPayload) m.payload).sessionToken;
+
+            System.out.println("SESSION TOKEN: " + st);
+            store.setSessionToken(st);
+        } else if (m.payload instanceof ScoreboardPayload) {
+            String sb = ((ScoreboardPayload) m.payload).scoreboard;
+
+            Base64.Decoder decoder = Base64.getDecoder();
+
+            try {
+                String scoreboard = new String(decoder.decode(sb.getBytes()));
+                System.out.println("\n" + scoreboard);
+            } catch (Exception e) {
+                System.out.println("[CLIENT] Error while trying to decode scoreboard base64!");
+                e.printStackTrace();
+            }
+        } else if (m.payload instanceof ForbiddenPayload) {
+            mp = ((ForbiddenPayload) m.payload).message;
+            System.out.println(mp);
         }
     }
 
@@ -61,14 +104,6 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         store.nextMessageIsASentence = true;
     }
 
-    private void P350() {
-    }
-
-    private void P340() {
-    }
-
-    private void P330() {
-    }
 
     private void P320(Message m) {
         Base64.Decoder decoder = Base64.getDecoder();
@@ -88,26 +123,8 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         }
     }
 
-    private void P310() {
-    }
-
     private void P300(Message m) {
         store.setSessionToken((String) m.payload);
-    }
-
-    private void P250() {
-    }
-
-    private void P240() {
-    }
-
-    private void P230() {
-    }
-
-    private void P210() {
-    }
-
-    private void P200() {
     }
 
     private void P100 (Message m) throws Exception {
@@ -116,6 +133,17 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         }
     }
 
+
+    /////////////////////////
+    // HANDLING USER INPUT //
+    /////////////////////////
+
+    /**
+     * Calls out the assigned function depending on the
+     * command submitted as input.
+     *
+     * @param input user input
+     */
     public void processUserInput(String input) {
         String[] split = input.split(" ");
 
@@ -135,22 +163,21 @@ public class ClientProtocolHandler extends ProtocolDictionary {
     }
 
     public void submitSentence(String sentence) {
-        String payload = sentence;
-        Message m = new Message(false, 100, false, payload);
-        this.bq.add(m);
+        Message m = new Message(false, 100, false, sentence);
+        this.messageBlockingQueue.add(m);
         store.nextMessageIsASentence = false;
     }
 
     private void ready() {
         String payload = "ready";
         Message m = new Message(false, 100, false, payload);
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void teams() {
         String payload = "";
         Message m = new Message(false, 350, false, payload);
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void joinTeam(String[] input) {
@@ -163,26 +190,26 @@ public class ClientProtocolHandler extends ProtocolDictionary {
 
         Message m = new Message(false, 340, false, teamname);
 
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void logout() {
-        String payload = this.translateReplyCode(370);
+        String payload = "";
         Message m = new Message(false, 370, false, payload);
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void healthcheck() {
         String ping = "ping";
 
         Message m = new Message(false, 360, false, ping);
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void processScoreboardInput() {
-        String payload = this.translateReplyCode(320); // Not really needed
-        Message m = new Message(false, 320, false, payload);
-        this.bq.add(m);
+        ScoreboardPayload sp = new ScoreboardPayload("");
+        Message m = new Message(false, 100, false, sp);
+        this.messageBlockingQueue.add(m);
     }
 
     private void processLoginInput(String[] credentials) {
@@ -197,7 +224,7 @@ public class ClientProtocolHandler extends ProtocolDictionary {
         LoginPayload lp = new LoginPayload(username, password);
 
         Message m = new Message(false, 300, false, lp);
-        this.bq.add(m);
+        this.messageBlockingQueue.add(m);
     }
 
     private void processRegisterInput(String[] credentials) {
@@ -212,30 +239,39 @@ public class ClientProtocolHandler extends ProtocolDictionary {
 
         RegisterPayload registerPayload = new RegisterPayload(username, password, repeatedPassword);
 
-        Message m = new Message(false, 310, false, registerPayload);
-        this.bq.add(m);
+        Message m = new Message(false, 100, false, registerPayload);
+        this.messageBlockingQueue.add(m);
     }
 
     private void processCreateTeamInput(String[] input) {
-        if (input.length != 2) {
-            System.out.println("Invalid input! Use: :create <teamname>");
+        if (input.length != 3) {
+            System.out.println("Invalid input! Use: :create <teamname> <public OR private>");
+            return;
+        }
+
+        boolean openToAll;
+
+        if (input[2].equals("public")) {
+            openToAll = true;
+        } else if (input[2].equals("private")) {
+            openToAll = false;
+        } else {
+            System.out.println("Invalid input! Use: :create <teamname> <public OR private>");
             return;
         }
 
         String teamname = input[1];
 
-        Message m = new Message(false, 330, false, teamname);
-        this.bq.add(m);
+        CreateTeamPayload ctp = new CreateTeamPayload(teamname, openToAll);
+        Message m = new Message(false, 100, false, ctp);
+
+        this.messageBlockingQueue.add(m);
     }
 
     public boolean validCommand(String command) {
         String[] split = command.split(" ");
 
-        if (this.commands.containsKey(split[0])) {
-            return true;
-        } else {
-            return false;
-        }
+        return this.commands.containsKey(split[0]);
     }
 
     public void help() {

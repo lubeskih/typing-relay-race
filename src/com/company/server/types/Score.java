@@ -1,4 +1,4 @@
-package com.company.server;
+package com.company.server.types;
 
 import java.time.Duration;
 

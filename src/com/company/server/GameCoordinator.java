@@ -1,5 +1,9 @@
 package com.company.server;
 
+import com.company.server.types.InternalMessage;
+import com.company.server.types.LoggedInUser;
+import com.company.server.types.Score;
+import com.company.server.types.Team;
 import com.company.shared.Message;
 
 import java.io.ObjectOutputStream;
@@ -32,7 +36,7 @@ public class GameCoordinator implements Runnable {
     private boolean isOwner(String sessionToken) {
         LoggedInUser user = store.loggedInUsers.get(sessionToken);
         String name = user.username;
-        return team.memberOne.username.equals(name);
+        return team.admin.username.equals(name);
     }
 
     private void sendMessage(Message m, ObjectOutputStream address) {
@@ -47,7 +51,7 @@ public class GameCoordinator implements Runnable {
             Message notify;
             String payload;
 
-            ObjectOutputStream p1 = team.memberOne.address;
+            ObjectOutputStream p1 = team.admin.address;
             ObjectOutputStream p2 = team.memberTwo.address;
 
             payload = "Game is about to begin!";
@@ -250,14 +254,14 @@ public class GameCoordinator implements Runnable {
         }
 
         store.gameCoordinationBQs.remove(team.teamname);
-        store.teams.get(team.teamname).memberOne.team = null;
+        store.teams.get(team.teamname).admin.team = null;
         store.teams.get(team.teamname).memberTwo.team = null;
         store.teams.remove(team.teamname);
 
         String payload = "Game coordination finished. Your team was removed, but if you scored, your score was logged. Create a new team to play again.";
         Message notify = new Message(false, 100, false, payload);
 
-        ObjectOutputStream p1 = team.memberOne.address;
+        ObjectOutputStream p1 = team.admin.address;
         ObjectOutputStream p2 = team.memberTwo.address;
 
         sendMessage(notify, p1);

@@ -1,5 +1,7 @@
 package com.company.server;
 
+import com.company.server.types.InternalMessage;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
@@ -26,7 +28,7 @@ public class Server {
             while (true) {
                 Socket client = listener.accept();
 
-                Thread t = new Thread(new ClientMessageReceiver(client, InternalMessageBQ));
+                Thread t = new Thread(new ClientMessageReceiver(client, store));
                 t.start();
             }
         }

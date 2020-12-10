@@ -1,9 +1,8 @@
-package com.company.server;
+package com.company.server.types;
 
 import com.company.shared.Message;
 
 import java.io.ObjectOutputStream;
-import java.net.Socket;
 
 public class InternalMessage {
     public Message message;

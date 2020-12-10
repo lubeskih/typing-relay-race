@@ -1,6 +1,7 @@
 package com.company.server;
 
-import com.company.shared.Message;
+import com.company.server.types.InternalMessage;
+import com.company.server.types.LoggedInUser;
 
 import java.util.concurrent.BlockingQueue;
 

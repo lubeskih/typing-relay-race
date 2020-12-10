@@ -1,4 +1,4 @@
-package com.company.server;
+package com.company.server.types;
 
 public class User {
     public String username;

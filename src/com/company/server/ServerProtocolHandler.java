@@ -1,7 +1,9 @@
 package com.company.server;
 
+import com.company.server.types.InternalMessage;
+import com.company.server.types.LoggedInUser;
+import com.company.server.types.User;
 import com.company.shared.Message;
-import com.company.shared.ProtocolDictionary;
 import com.company.shared.payloads.LoginPayload;
 import com.company.shared.payloads.RegisterPayload;
 
@@ -10,7 +12,7 @@ import java.util.Base64;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ServerProtocolHandler extends ProtocolDictionary {
+public class ServerProtocolHandler {
     private Store store;
     private BlockingQueue<InternalMessage> OutboundMessageBQ;
 
@@ -25,7 +27,6 @@ public class ServerProtocolHandler extends ProtocolDictionary {
     }
 
     public ServerProtocolHandler(Store store, BlockingQueue<InternalMessage> OutboundMessageBQ) {
-        super();
         this.store = store;
         this.OutboundMessageBQ = OutboundMessageBQ;
     }
@@ -45,6 +46,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         }
     }
 
+    // LIST TEAMS
     private InternalMessage P350(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -65,6 +67,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // JOIN TEAM
     private InternalMessage P340(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -99,7 +102,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             return reply;
         }
 
-        payload = "Successfully joined the team " + teamname.toUpperCase() + " whose owner is " + this.store.teams.get(teamname).memberOne.username.toUpperCase();
+        payload = "Successfully joined the team " + teamname.toUpperCase() + " whose owner is " + this.store.teams.get(teamname).admin.username.toUpperCase();
         replyMessage = new Message(true, 100, false, payload);
         reply = new InternalMessage(replyMessage, im.address);
 
@@ -122,6 +125,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // TEAM CREATION
     private synchronized InternalMessage P330(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -139,7 +143,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         String teamname = (String) im.message.payload;
         LoggedInUser memberOne = this.store.loggedInUsers.get(im.message.getSessionToken());
         try {
-            this.store.createTeam(teamname, memberOne);
+//            this.store.createTeam(teamname, memberOne, null);
         } catch (Exception e) {
             payload = e.getMessage();
             replyMessage = new Message(true, 210, true, payload);
@@ -157,6 +161,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // LOGOUT
     private InternalMessage P370(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -179,6 +184,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // LOGIN
     private synchronized InternalMessage P300(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -220,7 +226,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         // TODO
 
         String newSessionToken = generateNewToken();
-        store.loginUser(user, im.address, newSessionToken);
+        store.loginUser(null, null, newSessionToken);
 
         String payload = newSessionToken;
         replyMessage = new Message(true, 300, false, payload);
@@ -229,6 +235,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
         return reply;
     }
 
+    // REGISTER
     private synchronized InternalMessage P310(InternalMessage im) {
         Message replyMessage;
         InternalMessage reply;
@@ -289,7 +296,7 @@ public class ServerProtocolHandler extends ProtocolDictionary {
             return reply;
         }
 
-        payload = store.scoreboard.viewScoreboard();
+        payload = null;
 
         replyMessage = new Message(true, 320, false, payload);
         reply = new InternalMessage(replyMessage, im.address);
