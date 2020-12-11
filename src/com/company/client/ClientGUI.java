@@ -38,7 +38,7 @@ public class ClientGUI {
     }
 
     public static void main(String[] args)  {
-        var client = new ClientGUI();
+        ClientGUI client = new ClientGUI();
         client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         client.frame.setVisible(true);
         client.run();

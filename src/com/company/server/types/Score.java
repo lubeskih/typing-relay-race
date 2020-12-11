@@ -9,7 +9,7 @@ public class Score implements Comparable<Score> {
 
     public Score(String teamname, Duration totalTime) {
         this.teamname = teamname;
-        this.totalScoreInSeconds = (int) totalTime.toSeconds();
+        this.totalScoreInSeconds = (int) totalTime.getSeconds();
         this.totalScoreInMinutes = (int) totalTime.toMinutes();
     }
 

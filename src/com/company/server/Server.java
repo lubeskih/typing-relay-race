@@ -13,7 +13,7 @@ public class Server {
     public static void main(String[] args) throws Exception {
         Store store = new Store();
 
-        try (var listener = new ServerSocket(PORT)) {
+        try (ServerSocket listener = new ServerSocket(PORT)) {
             System.out.println("Server is running ...");
             while (true) {
                 Socket client = listener.accept();

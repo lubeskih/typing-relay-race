@@ -264,7 +264,7 @@ public class GameCoordinator implements Runnable {
 
             if (this.totalTeamTime != null) {
                 ip = new InfoPayload("Total time for the team " + team.teamname +
-                        " is " + (this.totalTeamTime.toSeconds()) +
+                        " is " + (this.totalTeamTime.getSeconds()) +
                         " seconds (" + this.totalTeamTime.toMinutes() + " minutes).");
 
                 Score score = new Score(this.team.teamname, this.totalTeamTime);
