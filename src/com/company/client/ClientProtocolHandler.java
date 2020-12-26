@@ -35,15 +35,6 @@ public class ClientProtocolHandler {
         this.commands.put(":ready", true);
     }
 
-    //100     OK
-    //110     Info
-    //
-    //200     Bad Request
-    //210     Internal Server Error
-    //220     Forbidden
-    //230     Conflict
-    //240     Not Found
-
     public String translate(int reply) {
         switch (reply) {
             case 100: return "OK";
@@ -103,44 +94,22 @@ public class ClientProtocolHandler {
             mp = ((BadRequestPayload) m.payload).message;
             System.out.println(mp);
         } else if (m.payload instanceof NotFoundPayload) {
-            mp = ((BadRequestPayload) m.payload).message;
+            mp = ((NotFoundPayload) m.payload).message;
             System.out.println(mp);
-        }
-    }
+        } else if (m.payload instanceof TeamsPayload) {
+            String sb = ((TeamsPayload) m.payload).message;
 
-    private void P260() {
-        store.nextMessageIsASentence = true;
-    }
-
-
-    private void P320(Message m) {
-        Base64.Decoder decoder = Base64.getDecoder();
-
-        if (m.payload instanceof String) {
-            String b64scoreboard = (String) m.payload;
+            Base64.Decoder decoder = Base64.getDecoder();
 
             try {
-                String scoreboard = new String(decoder.decode(b64scoreboard.getBytes()));
-                System.out.println(scoreboard);
+                String listTeams = new String(decoder.decode(sb.getBytes()));
+                System.out.println("\n" + listTeams);
             } catch (Exception e) {
-                System.out.println("Error while trying to decode scoreboard base64!");
+                System.out.println("[CLIENT] Error while trying to decode team list base64!");
                 e.printStackTrace();
             }
-        } else {
-            System.out.println("Scoreboard error! Payload is not String!");
         }
     }
-
-    private void P300(Message m) {
-        store.setSessionToken((String) m.payload);
-    }
-
-    private void P100 (Message m) throws Exception {
-        if (!(m.payload instanceof String)) {
-            throw new Exception("Fucked up.");
-        }
-    }
-
 
     /////////////////////////
     // HANDLING USER INPUT //
@@ -185,8 +154,9 @@ public class ClientProtocolHandler {
     }
 
     private void teams() {
-        String payload = "";
-        Message m = new Message(false, 350, false, payload);
+        TeamsPayload tp = new TeamsPayload("");
+        Message m = new Message(false, 350, false, tp);
+
         this.messageBlockingQueue.add(m);
     }
 

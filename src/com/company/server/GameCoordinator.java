@@ -68,6 +68,8 @@ public class GameCoordinator implements Runnable {
             m = new Message(false, 110, false, ip);
             sendMessage(m, this.p1);
 
+            team.teamInGame = true;
+
             ip = new InfoPayload("Game is about to begin!");
             m = new Message(false, 110, false, ip);
             sendMessage(m, p1);

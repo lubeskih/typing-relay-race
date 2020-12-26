@@ -58,12 +58,10 @@ public class Client {
 class Read implements Runnable {
     private Socket socket;
     private ClientProtocolHandler protocol;
-    private Store store;
 
     Read(Socket socket, ClientProtocolHandler protocol, Store store) {
         this.socket = socket;
         this.protocol = protocol;
-        this.store = store;
     }
 
     @Override
@@ -123,7 +121,7 @@ class Write implements Runnable {
                 if (m.reply == 370 && sessionToken != null) {
                     this.store.setSessionToken(null);
                 }
-            } while(true); // while true.. ? think about this.
+            } while(true);
 
         } catch (IOException | InterruptedException exception) {
             exception.printStackTrace();
