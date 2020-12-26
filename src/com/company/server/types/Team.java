@@ -7,6 +7,7 @@ public class Team {
     public String memberOneScore = null;
     public String memberTwoScore = null;
     public String scoreTotal = null;
+    public boolean teamInGame = false;
     public String password = null;
     public boolean visible = true;
 

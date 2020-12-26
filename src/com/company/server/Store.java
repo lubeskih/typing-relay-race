@@ -7,6 +7,7 @@ import com.company.shared.payloads.*;
 import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,7 +75,7 @@ public class Store {
         String newSessionToken = generateNewToken();
 
         // log in the user
-        LoggedInUser loggedInuser = new LoggedInUser(user.username, user.hash, address);
+        LoggedInUser loggedInuser = new LoggedInUser(user.username, user.hash, address, newSessionToken);
         loggedInUsers.put(newSessionToken, loggedInuser);
 
         // reply
@@ -97,14 +98,20 @@ public class Store {
             return m;
         }
 
-        String score = "SCOREBOARD\n";
-        score += "==========================\n";
+        StringBuilder s = new StringBuilder();
+        s.append(String.format("%-20s%-20s%-20s\n", "Rank", "Team Name", "Total Score"));
+        s.append(String.format("===================================================\n"));
+        int i = 1;
 
-        for (Score s:scoreboard.scoreboard) {
-            score += s.teamname + "\t" + s.totalScoreInSeconds + "s. (" + s.totalScoreInMinutes + "m)\n";
+        for (Score score:scoreboard.scoreboard) {
+            s.append(String.format("%-20s", i));
+            s.append(String.format("%-20s", score.teamname));
+            s.append(String.format("%-20s", score.totalScoreInSeconds + "s. (" + score.totalScoreInMinutes + "m.)"));
+
+            i++;
         }
 
-        b64score = encoder.encodeToString(score.getBytes());
+        b64score = encoder.encodeToString(s.toString().getBytes());
 
         // send message
         ScoreboardPayload sp = new ScoreboardPayload(b64score);
@@ -210,6 +217,52 @@ public class Store {
         System.out.println("Game coordinator for team " + teamname + " spawned!");
     }
 
+    public Message listTeams() {
+        Message m;
+
+        Base64.Encoder encoder = Base64.getEncoder();
+        String b64score;
+
+        if (teams.size() == 0) {
+            InfoPayload ip = new InfoPayload("There are no teams created. You can be the first. :)");
+            m = new Message(true, 110, false, ip);
+
+            return m;
+        }
+
+        StringBuilder s = new StringBuilder();
+        s.append(String.format("%-20s%-20s%-20s%-20s\n","Team Name","Created By","Requires Password","Players"));
+        s.append(String.format("===================================================================\n"));
+
+        for (Map.Entry<String, Team> entry : teams.entrySet()) {
+            String key = entry.getKey();
+            Team value = entry.getValue();
+
+            try {
+                String requiresPassword = value.visible ? "No" : "Yes";
+
+                // List only teams that are not in-game
+                if (!value.teamInGame) {
+                    s.append(String.format("%-20s", key));
+                    s.append(String.format("%-20s", value.admin.username));
+                    s.append(String.format("%-20s", requiresPassword));
+                    s.append(String.format("%-20s", "1/2"));
+                    s.append("\n");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println(s.toString());
+        b64score = encoder.encodeToString(s.toString().getBytes());
+
+        // send message
+        TeamsPayload tp = new TeamsPayload(b64score);
+        m = new Message(true, 100, false, tp);
+        return m;
+    }
+
     //////////////////////
     // HELPER FUNCTIONS //
     //////////////////////
@@ -269,5 +322,4 @@ public class Store {
     public LoggedInUser getUser(String sessionToken) {
         return loggedInUsers.get(sessionToken);
     }
-
 }
