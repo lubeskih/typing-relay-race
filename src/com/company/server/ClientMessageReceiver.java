@@ -1,5 +1,7 @@
 package com.company.server;
 
+import com.company.server.types.InternalMessage;
+import com.company.server.types.LoggedInUser;
 import com.company.shared.Message;
 
 import java.io.*;
@@ -8,11 +10,13 @@ import java.util.concurrent.BlockingQueue;
 
 public class ClientMessageReceiver implements Runnable {
     private Socket socket;
-    private BlockingQueue<InternalMessage> InternalMessageBQ;
+    MessageProcessor messageProcessor;
+    private Store store;
 
-    ClientMessageReceiver(Socket socket, BlockingQueue<InternalMessage> bq) {
+    ClientMessageReceiver(Socket socket, Store store) {
         this.socket = socket;
-        this.InternalMessageBQ = bq;
+        this.messageProcessor = new MessageProcessor(store);
+        this.store = store;
     }
 
     @Override
@@ -24,10 +28,33 @@ public class ClientMessageReceiver implements Runnable {
         {
             while(true) {
                 Message received = (Message) in.readObject();
-                System.out.println("User sent a token which is: " + received.getSessionToken());
+                InternalMessage message = new InternalMessage(received, out);
 
-                InternalMessage im = new InternalMessage(received, out);
-                this.InternalMessageBQ.add(im);
+                String token = received.getSessionToken();
+
+                // pass to MP
+                // get from MP
+                // hasToken and inGame? pass to GameCoordinator
+                // if not
+                // is response?
+                // if yes -> write
+                // if not -> none
+
+                if (store.isAuthenticated(token) && store.isInGame(token)) {
+                    // pass to GC
+                    LoggedInUser user = store.getUser(token);
+
+                    BlockingQueue<Message> assignedGameCoordinator = this.store.gameCoordinationBQs.get(user.team.teamname);
+                    assignedGameCoordinator.add(received);
+                } else {
+                    InternalMessage im = messageProcessor.process(message);
+
+                    if (im.message.isResponse) {
+                        out.writeObject(im.message);
+                    } else {
+                        // nothing
+                    }
+                }
             }
         } catch (IOException | ClassNotFoundException exception) {
             exception.printStackTrace();

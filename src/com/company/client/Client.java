@@ -73,7 +73,6 @@ class Read implements Runnable {
             ) {
             while(true) {
                 Message m = (Message) in.readObject();
-                System.out.println("Received a " + m.reply + " response, saying: " + m.payload.toString());
                 protocol.process(m);
             }
         } catch (ClassNotFoundException e) {
@@ -106,7 +105,7 @@ class Write implements Runnable {
 
             do {
                 Message m = bq.take();
-                String sessionToken = this.store.getSessionToken();
+                String sessionToken = store.getSessionToken();
 
                 // if we have a session token in the Store
                 // then every outbound message will have
