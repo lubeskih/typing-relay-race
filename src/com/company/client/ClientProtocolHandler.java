@@ -102,6 +102,9 @@ public class ClientProtocolHandler {
         } else if (m.payload instanceof BadRequestPayload) {
             mp = ((BadRequestPayload) m.payload).message;
             System.out.println(mp);
+        } else if (m.payload instanceof NotFoundPayload) {
+            mp = ((BadRequestPayload) m.payload).message;
+            System.out.println(mp);
         }
     }
 
