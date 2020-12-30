@@ -163,8 +163,7 @@ public class GameCoordinator implements Runnable {
             m = new Message(false, 110, false, ip);
             sendMessage(m, p2);
 
-
-            String generatedText = "Quick black dog!";
+            String generatedText =  store.generateRandomWords();
             ip = new InfoPayload("Write back this text, fast!\n\n" + generatedText);
             m = new Message(false, 110, false, ip);
             sendMessage(m, p1);
@@ -217,7 +216,7 @@ public class GameCoordinator implements Runnable {
             m = new Message(false, 110, false, ip);
             sendMessage(m, p1);
 
-            generatedText = "Quick brown fox!";
+            generatedText = store.generateRandomWords();
             ip = new InfoPayload("Write back this text, fast!\n\n" + generatedText);
             m = new Message(false, 110, false, ip);
             sendMessage(m, p2);

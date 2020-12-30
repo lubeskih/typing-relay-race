@@ -4,11 +4,9 @@ import com.company.server.types.*;
 import com.company.shared.Message;
 import com.company.shared.payloads.*;
 
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,8 +17,38 @@ public class Store {
     public ConcurrentHashMap<String, Team> teams = new ConcurrentHashMap<>();
     public ConcurrentHashMap<String, BlockingQueue<Message>> gameCoordinationBQs = new ConcurrentHashMap<>();
     public Scoreboard scoreboard = new Scoreboard();
+    public String[] words = {"street", "inch", "lot", "nothing", "course", "stay", "wheel",
+            "full", "force", "blue", "object", "decide", "surface", "deep", "moon", "island",
+            "foot", "yet", "busy", "test", "record", "boat", "common", "gold", "possible", "plane",
+            "age", "dry", "wonder", "laugh", "thousand", "ago", "ran", "check", "game", "shape",
+            "yes", "hot", "miss", "brought", "heat", "snow", "bed", "bring", "sit", "perhaps",
+            "fill", "east", "weight", "language", "among"};
 
     public Store() {}
+
+    public String generateRandomWords() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        int limit = 80;
+        while(limit > 0) {
+            String word = words[random.nextInt(words.length)];
+            limit = limit - word.length() - 1;
+
+            sb.append(word + " ");
+        }
+
+        if (sb.length() > 80) {
+            sb.delete(77, sb.length());
+            sb.append("...");
+        }
+
+        if (sb.toString().endsWith(" ")) {
+            sb.replace(80, 80, ".");
+        }
+
+        return sb.toString();
+    }
 
     public synchronized Message registerUser(String username, String password) {
         User user = new User(username, password);
@@ -107,6 +135,7 @@ public class Store {
             s.append(String.format("%-20s", i));
             s.append(String.format("%-20s", score.teamname));
             s.append(String.format("%-20s", score.totalScoreInSeconds + "s. (" + score.totalScoreInMinutes + "m.)"));
+            s.append(String.format("\n"));
 
             i++;
         }
