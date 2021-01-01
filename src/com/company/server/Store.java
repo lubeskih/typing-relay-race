@@ -51,8 +51,8 @@ public class Store {
     }
 
     public synchronized Message registerUser(String username, String password) {
-        User user = new User(username, password);
         Message m;
+        User user = new User(username, password);
 
         if (this.registeredUsers.containsKey(username)) {
             ConflictPayload cp = new ConflictPayload("User already registered, choose a different name!");
@@ -93,7 +93,9 @@ public class Store {
         }
 
         // check if password is correct
-        if (!user.hash.equals(password)) {
+        Security sec = new Security();
+
+        if (!sec.correctPassword(password, user.salt, user.hash)) {
             ForbiddenPayload fp = new ForbiddenPayload("Invalid credentials.");
             m = new Message(true, 220, true, fp);
             return m;
@@ -127,7 +129,7 @@ public class Store {
         }
 
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%-20s%-20s%-20s\n", "Rank", "Team Name", "Total Score"));
+        s.append(String.format("%-20s%-20s%-20s\n", "Rank", "Team Name", "Total Score (s)"));
         s.append(String.format("===================================================\n"));
         int i = 1;
 
