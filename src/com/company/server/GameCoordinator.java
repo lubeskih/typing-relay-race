@@ -268,15 +268,29 @@ public class GameCoordinator implements Runnable {
                         " is " + (this.totalTeamTime.getSeconds()) +
                         " seconds (" + this.totalTeamTime.toMinutes() + " minutes).");
 
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
+                sendMessage(m, p2);
+
                 Score score = new Score(this.team.teamname, this.totalTeamTime);
+
+                if (store.scoreboard.betterThanTheFirstPlace(score.totalScoreInSeconds)) {
+                    ip = new InfoPayload("You are now first place! Congratulations! :)");
+                    m = new Message(false, 110, false, ip);
+
+                    sendMessage(m, p1);
+                    sendMessage(m, p2);
+                }
+
                 store.scoreboard.addNewScore(score);
             } else {
                 ip = new InfoPayload("You both submitted wrong text. :(");
+                m = new Message(false, 110, false, ip);
+                sendMessage(m, p1);
+                sendMessage(m, p2);
             }
 
-            m = new Message(false, 110, false, ip);
-            sendMessage(m, p1);
-            sendMessage(m, p2);
+
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -20,4 +20,13 @@ public class Scoreboard {
             scoreboard.remove(scoreboard.size() - 1);
         }
     }
+
+    public synchronized boolean betterThanTheFirstPlace(int score) {
+        if (scoreboard.size() > 0) {
+            Score firstTeam = scoreboard.get(0);
+            return score < firstTeam.totalScoreInSeconds;
+        }
+
+        return true;
+    }
 }
