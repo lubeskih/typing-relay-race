@@ -21,24 +21,23 @@ public class ClientMessageReceiver implements Runnable {
 
     @Override
     public void run() {
-        try(
-            ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-        )
-        {
+        Comms comms = null;
+
+        try {
+            comms = new Comms(socket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ObjectInputStream in = comms.getInputStream();
+            ObjectOutputStream out = comms.getOutputStream();
+
             while(true) {
                 Message received = (Message) in.readObject();
                 InternalMessage message = new InternalMessage(received, out);
 
                 String token = received.getSessionToken();
-
-                // pass to MP
-                // get from MP
-                // hasToken and inGame? pass to GameCoordinator
-                // if not
-                // is response?
-                // if yes -> write
-                // if not -> none
 
                 if (store.isAuthenticated(token) && store.isInGame(token)) {
                     // pass to GC
@@ -58,6 +57,13 @@ public class ClientMessageReceiver implements Runnable {
             }
         } catch (IOException | ClassNotFoundException exception) {
             exception.printStackTrace();
+        } finally {
+            try {
+                comms.closeInputStream();
+                comms.closeOutputStream();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
