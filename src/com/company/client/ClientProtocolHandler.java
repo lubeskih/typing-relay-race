@@ -108,6 +108,11 @@ public class ClientProtocolHandler {
                 System.out.println("[CLIENT] Error while trying to decode team list base64!");
                 e.printStackTrace();
             }
+        } else if (m.payload instanceof LogoutPayload) {
+            mp = ((LogoutPayload) m.payload).message;
+            System.out.println(mp);
+
+            store.setSessionToken(null);
         }
     }
 
@@ -129,7 +134,6 @@ public class ClientProtocolHandler {
             case ":login": processLoginInput(split); break;
             case ":scoreboard": processScoreboardInput(); break;
             case ":help": help(); break;
-            case ":ping": healthcheck(); break;
             case ":logout": logout(); break;
             case ":create": processCreateTeamInput(split); break;
             case ":join": joinTeam(split); break;
@@ -183,15 +187,8 @@ public class ClientProtocolHandler {
     }
 
     private void logout() {
-        String payload = "";
-        Message m = new Message(false, 370, false, payload);
-        this.messageBlockingQueue.add(m);
-    }
-
-    private void healthcheck() {
-        String ping = "ping";
-
-        Message m = new Message(false, 360, false, ping);
+        LogoutPayload lp = new LogoutPayload("");
+        Message m = new Message(false, 100, false, lp);
         this.messageBlockingQueue.add(m);
     }
 
@@ -270,11 +267,10 @@ public class ClientProtocolHandler {
                 ":login <username> <password>                        Login\n" +
                 ":register <username> <password> <repeat_password>   Register an account\n" +
                 ":scoreboard                                         View Scoreboard\n" +
-                ":create <team_name>                                 Create a New Team\n" +
+                ":create <team_name> <public | private>              Create a New Team\n" +
                 ":join <team_name>                                   Join an Existing Team\n" +
                 ":teams                                              List All Teams\n" +
-                ":ping                                               Connection Healthcheck\n" +
-                ":clear                                              Clears the Screen\n" +
+                ":logout                                             Logout\n" +
                 "===========================================================================\n");
     }
 }

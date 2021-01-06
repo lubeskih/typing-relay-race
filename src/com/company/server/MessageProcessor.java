@@ -29,6 +29,8 @@ public class MessageProcessor {
             newMessage = joinTeam((JoinTeamPayload) im.message.payload, im.message.getSessionToken());
         } else if (im.message.payload instanceof TeamsPayload) {
             newMessage = listTeams(im.message.getSessionToken());
+        } else if (im.message.payload instanceof LogoutPayload) {
+            newMessage = logoutMember(im.message.getSessionToken());
         } else {
             InfoPayload ip = new InfoPayload("Bad Request. Not existing payload.");
             newMessage = new Message(true, 200, true, ip);
@@ -36,6 +38,14 @@ public class MessageProcessor {
 
         newIm = new InternalMessage(newMessage, im.address);
         return newIm;
+    }
+
+    private Message logoutMember(String sessionToken) {
+        if (!store.isAuthenticated(sessionToken)) {
+            return store.notAuthenticatedMessage();
+        }
+
+        return store.logoutUser(sessionToken);
     }
 
     private Message listTeams(String sessionToken) {

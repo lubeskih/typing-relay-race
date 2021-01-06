@@ -157,9 +157,32 @@ For example, if there are 10 clients connected, and 4 of them formed 2 teams and
 T = 10 + 2 = 12
 ```
 
+**Security**
+
+Since this program is using in-memory data structures as database, it does not take care of security that much. In that matter, passwords are stored as `SHA-1` hashes, with appended `salt`. Stronger algorithms exist, but it is good enough for a small program like this. 
+
+**Logging in**
+
+When a user is logged in, the server issues a `session token` which lasts until the user explicitly sends a `:logout` command.
+
+Logged in users send their session token as part of their message objects, which are then checked by the server if they are valid, and if they are, they are allowed to ask for resource or execute a command from the server.
 
 ### Diagram
 ![Alt Text](assets/architecture.png)
+
+## Finding your way around
+
+The structure of the codebase is divided in three packages. 
+
+1. The `client` package that hosts all logic related to a client.
+2. The `server` package that hosts all logic related to a server.
+3. The `shared` package that hosts code that is shared between the two packages mentioned above.
+
+To start studying the code, for the client, you start at the `Client.java` file in the `client` package.
+
+To start studying the code, for the server, you start at the `Server.java` file, in the `server` package.
+
+It is important to note that most of the functions that execute something that was asked from the client are in the `Store.java` file, in the `server` package. Those functions are usually called from the `MessageProcessor.java` file, which checks incomming messages for what payload they are bringing, and then passing that message to a function that knows how to take care of that.
 
 ## Messaging Protocol
 

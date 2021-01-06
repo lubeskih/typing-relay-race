@@ -353,4 +353,13 @@ public class Store {
     public LoggedInUser getUser(String sessionToken) {
         return loggedInUsers.get(sessionToken);
     }
+
+    public Message logoutUser(String sessionToken) {
+        this.loggedInUsers.remove(sessionToken);
+
+        LogoutPayload lp = new LogoutPayload("Successfully logged out.");
+        Message m = new Message(true, 100, false, lp);
+
+        return m;
+    }
 }
