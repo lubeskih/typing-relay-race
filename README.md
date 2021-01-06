@@ -178,7 +178,7 @@ The structure of the codebase is divided in three packages.
 2. The `server` package that hosts all logic related to a server.
 3. The `shared` package that hosts code that is shared between the two packages mentioned above.
 
-To start studying the code, for the client, you start at the `Client.java` file in the `client` package.
+To start studying the code, for the client, you start at the `Client.java` file in the `client` package. The `Message Processor` you see in the Diagram, for the client, the file is `ClientProtocolHandler.java`.
 
 To start studying the code, for the server, you start at the `Server.java` file, in the `server` package.
 
