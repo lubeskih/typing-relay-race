@@ -25,14 +25,14 @@ Every command starts with a `:`, for example `:help`. The full list of supported
 ```
 COMMAND                                             ACTION
 ===========================================================================
-:help Show Help                                     Show help
+:help                                               Show help
 :register <username> <password> <repeat_password>   Register an account
 :login <username> <password>                        Login
 :scoreboard                                         View Scoreboard
 :create <team_name> <public | private>              Create a New Public/Private Team
 :join <team_name> <password (only if private team)> Join an Existing Team
 :teams                                              List All Teams
-:ping                                               Connection Healthcheck
+:logout                                             Logout
 ===========================================================================
 ```
 
